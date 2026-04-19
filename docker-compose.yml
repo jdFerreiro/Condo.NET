@@ -2,18 +2,33 @@ version: '3.8'
 
 services:
   # --- INFRAESTRUCTURA ---
-  db-condonet:
+  # Base de datos exclusiva para Auth
+  db.auth:
     image: postgres:15-alpine
-    container_name: condonet_db
-    restart: always
+    container_name: condonet.db.auth
     environment:
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=condopassword
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${DB_NAME_AUTH}
     ports:
-      - "5432:5432"
+      - "5433:5432" # Puerto diferente para evitar conflictos locales
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - auth_db_data:/var/lib/postgresql/data
 
+  # Base de datos exclusiva para Assets
+  db.asset:
+    image: postgres:15-alpine
+    container_name: condonet.db.asset
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${DB_NAME_ASSETS}
+    ports:
+      - "5434:5432" # Otro puerto diferente
+    volumes:
+      - asset_db_data:/var/lib/postgresql/data
+
+  # Accceso a RabbitMQ
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: condonet_rabbitmq
@@ -22,8 +37,8 @@ services:
       - "15672:15672"
     restart: always
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: da#2457fe_R48817
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
 
   # --- MICROSERVICIOS ---
   auth-service:
@@ -33,18 +48,38 @@ services:
     container_name: condonet_auth
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=db-condonet;Database=condonet_auth;Username=admin;Password=condopassword
-      - JwtSettings__Key=Esta_es_una_clave_secreta_muy_larga_para_condo_net_2026
-      - JwtSettings__Issuer=CondoNet
-      - JwtSettings__Audience=CondoNet_Users
+      - ConnectionStrings__DefaultConnection=Host=db;Database=${DB_NAME_AUTH};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};
+      - JwtSettings__Secret=${JWT_SECRET}
+      - JwtSettings__Issuer=${JWT_ISSUER}
+      - JwtSettings__Audience=${JWT_AUDIENCE}
       - RabbitMqSettings__Host=rabbitmq
-      - RabbitMqSettings__Username=guest # Debe coincidir arriba
-      - RabbitMqSettings__Password=da#2457fe_R48817  # Debe coincidir arriba
+      - RabbitMqSettings__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
+      - RabbitMqSettings__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
     depends_on:
-      - db-condonet
+      - db
       - rabbitmq
     ports:
       - "8080:8080"
+
+  assets-service:
+    build:
+      context: .
+      dockerfile: src/CondoNet.Assets.Api/Dockerfile
+    container_name: condonet_assets
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db;Database=${DB_NAME_ASSETS};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};
+      - JwtSettings__Secret=${JWT_SECRET}
+      - JwtSettings__Issuer=${JWT_ISSUER}
+      - JwtSettings__Audience=${JWT_AUDIENCE}
+      - RabbitMqSettings__Host=rabbitmq
+      - RabbitMqSettings__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
+      - RabbitMqSettings__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+    depends_on:
+      - db
+      - rabbitmq
+    ports:
+      - "8081:8080"
 
 volumes:
   pgdata:
