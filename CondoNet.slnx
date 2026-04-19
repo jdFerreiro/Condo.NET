@@ -1,9 +1,6 @@
 <Solution>
   <Folder Name="/infra/" />
   <Folder Name="/src/">
-    <Project Path="src/CondoNET.Asset.Api/CondoNET.Asset.Api.csproj" Id="b23d4388-7519-438b-813b-9abf8db9d0f9" />
-    <Project Path="src/CondoNet.Asset.Core/CondoNet.Asset.Core.csproj" Id="1a809ff1-6533-475b-ae3d-5cdaaa588961" />
-    <Project Path="src/CondoNet.Asset.Infraestructure/CondoNet.Asset.Infraestructure.csproj" Id="739226a1-0f11-4b3d-8473-54da96ff51a1" />
     <Project Path="src/CondoNet.Auth.Api/CondoNet.Auth.Api.csproj" Id="c57c8f12-3091-4a8d-8053-c4b864c62e04" />
     <Project Path="src/CondoNet.Auth.Core/CondoNet.Auth.Core.csproj" Id="c78471d9-945c-4b92-aff8-f0b30e67fdf1" />
     <Project Path="src/CondoNet.Auth.Infrastructure/CondoNet.Auth.Infrastructure.csproj" Id="5a44e2fb-e066-4f8c-ba15-a9ee351f7591" />
