@@ -1,4 +1,4 @@
-﻿namespace CondoNet.Shared
+﻿namespace CondoNet.Shared.Settings
 {
     public class JwtSettings
     {

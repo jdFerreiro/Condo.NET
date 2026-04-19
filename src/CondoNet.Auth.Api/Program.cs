@@ -3,6 +3,7 @@ using CondoNet.Auth.Api.Middleware;
 using CondoNet.Auth.Core.Interfaces;
 using CondoNet.Auth.Infrastructure.Persistence;
 using CondoNet.Auth.Infrastructure.Services;
+using CondoNet.Shared.Settings;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,8 @@ using System.Text;
 
 
 var builder = WebApplication.CreateBuilder(args);
+var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
+var RabbitMqSettings = builder.Configuration.GetSection("Rabbit").Get<JwtSettings>();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
