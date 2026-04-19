@@ -6,6 +6,8 @@
         public Guid UserId { get; set; }
         public Guid OrganizationId { get; set; }
         public Guid? CondoId { get; set; }
+        public ContextStatus Status { get; set; } = ContextStatus.Active;
+
 
         // Cambio: Referencia al ID del Rol
         public int RoleId { get; set; }
@@ -13,4 +15,13 @@
 
         public User User { get; set; } = null!;
     }
+
+    public enum ContextStatus
+    {
+        Active = 1,
+        Inactive = 2,
+        Pending = 3,
+        Suspended = 4
+    }
+
 }

@@ -31,9 +31,9 @@ public static class AuthEndpoints
             if (!identityService.VerifyPassword(request.Password, user.PasswordHash))
                 return Results.Json(new { error = "Contraseña inválida" }, statusCode: 401);
 
-            var context = user.Contexts.FirstOrDefault();
+            var context = user.Contexts.FirstOrDefault(uc => uc.Status == ContextStatus.Active);
             if (context == null)
-                return Results.Json(new { error = "Usuario sin contexto/rol" }, statusCode: 403);
+                return Results.Json(new { error = "No tienes un perfil activo en este condominio." }, statusCode: 403);
 
             var token = identityService.GenerateJwtToken(user, context);
             var refreshToken = identityService.GenerateRefreshToken();

@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # --- INFRAESTRUCTURA ---
+  db-condonet:
+    image: postgres:15-alpine
+    container_name: condonet_db
+    restart: always
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=condopassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: condonet_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: da#2457fe_R48817
+
+  # --- MICROSERVICIOS ---
+  auth-service:
+    build:
+      context: .
+      dockerfile: src/CondoNet.Auth.Api/Dockerfile
+    container_name: condonet_auth
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db-condonet;Database=condonet_auth;Username=admin;Password=condopassword
+      - JwtSettings__Key=Esta_es_una_clave_secreta_muy_larga_para_condo_net_2026
+      - JwtSettings__Issuer=CondoNet
+      - JwtSettings__Audience=CondoNet_Users
+      - RabbitMqSettings__Host=rabbitmq
+      - RabbitMqSettings__Username=guest # Debe coincidir arriba
+      - RabbitMqSettings__Password=da#2457fe_R48817  # Debe coincidir arriba
+    depends_on:
+      - db-condonet
+      - rabbitmq
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:

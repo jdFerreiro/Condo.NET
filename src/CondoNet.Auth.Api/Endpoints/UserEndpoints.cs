@@ -2,6 +2,8 @@
 using CondoNet.Auth.Core.Entities;
 using CondoNet.Auth.Core.Interfaces;
 using CondoNet.Auth.Infrastructure.Persistence;
+using CondoNet.Shared.Events;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -20,6 +22,7 @@ public static class UserEndpoints
             CreateUserRequest request,
             AuthDbContext db,
             IIdentityService identityService,
+            IPublishEndpoint publishEndpoint,
             ClaimsPrincipal userPrincipal) =>
         {
             // Extraer OrgId del administrador que está creando al usuario
@@ -53,10 +56,18 @@ public static class UserEndpoints
 
             db.Users.Add(newUser);
             db.UserContexts.Add(context);
-
             await db.SaveChangesAsync();
 
-            // TODO: Emitir evento UserCreatedEvent para otros microservicios
+            // 2. EMITIR EVENTO ASÍNCRONO
+            await publishEndpoint.Publish(new UserCreatedEvent
+            {
+                UserId = newUser.Id,
+                Email = newUser.Email,
+                FullName = newUser.FullName,
+                Role = context.Role.Name, // Nombre del rol desde la navegación
+                OrganizationId = orgId,
+                CondoId = request.CondoId
+            });
 
             return Results.Created($"/api/auth/users/{newUser.Id}",
                 new UserResponse(newUser.Id, newUser.Email, newUser.FullName, newUser.IsActive));

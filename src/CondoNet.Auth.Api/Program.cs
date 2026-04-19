@@ -3,6 +3,7 @@ using CondoNet.Auth.Api.Middleware;
 using CondoNet.Auth.Core.Interfaces;
 using CondoNet.Auth.Infrastructure.Persistence;
 using CondoNet.Auth.Infrastructure.Services;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -60,6 +61,20 @@ builder.Services.AddSwaggerGen(s =>
     {
         [new OpenApiSecuritySchemeReference("bearer", d)] = [],
         [new OpenApiSecuritySchemeReference("ApiKey", d)] = []
+    });
+});
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var settings = builder.Configuration.GetSection("RabbitMqSettings");
+
+        // "rabbitmq" es el nombre del servicio en tu docker-compose
+        cfg.Host(settings["Host"], "/", h =>
+        {
+            h.Username(settings["Username"] ?? "guest");
+            h.Password(settings["Password"] ?? "guest");
+        });
     });
 });
 
