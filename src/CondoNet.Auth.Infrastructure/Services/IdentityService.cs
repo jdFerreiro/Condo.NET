@@ -36,9 +36,6 @@ public class IdentityService(IOptions<JwtSettings> jwtSettings) : IIdentityServi
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new("OrganizationId", context.OrganizationId.ToString()),
-            new("RoleId", context.RoleId.ToString()),
-            new("Role", context.Role.Name),
-            new(ClaimTypes.Role, context.Role.Name)
         };
 
         // Si el contexto tiene un condominio específico, lo agregamos
@@ -48,10 +45,15 @@ public class IdentityService(IOptions<JwtSettings> jwtSettings) : IIdentityServi
         }
 
         // Agregamos los permisos del role
-        foreach (var p in context.Role.RolePermissions)
+        foreach (var role in context.Roles)
         {
-            claims.Add(new Claim("permissions", p.Permission.Name));
+            claims.Add(new Claim(ClaimTypes.Role, role.Name));
+            foreach (var p in role.RolePermissions)
+            {
+                claims.Add(new Claim("permissions", p.Permission.Name));
+            }
         }
+
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

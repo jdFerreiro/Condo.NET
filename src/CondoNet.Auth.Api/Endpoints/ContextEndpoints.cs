@@ -1,5 +1,5 @@
 ﻿using CondoNet.Auth.Core.Interfaces;
-using CondoNet.Shared;
+using CondoNet.Shared.DTOs;
 using System.Security.Claims;
 
 namespace CondoNet.Auth.Api.Endpoints
@@ -16,7 +16,8 @@ namespace CondoNet.Auth.Api.Endpoints
                 var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 var contexts = await contextService.GetUserContextsAsync(userId);
                 return Results.Ok(contexts);
-            });
+            })
+            .WithName("Available");
 
             // 2. Seleccionar un contexto y obtener el token final
             group.MapPost("/select", async (SelectContextRequest request, IContextService contextService, ITokenService tokenService, ClaimsPrincipal user) =>
@@ -33,7 +34,9 @@ namespace CondoNet.Auth.Api.Endpoints
                 var loginResponse = await tokenService.GenerateContextTokenAsync(userId, context);
 
                 return Results.Ok(loginResponse);
-            });
+            })
+            .WithName("SwitchContext");
+
         }
     }
 }

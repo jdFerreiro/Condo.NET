@@ -1,4 +1,4 @@
-﻿namespace CondoNet.Auth.Core.DTOs
+﻿namespace CondoNet.Shared.DTOs
 {
     public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
     public record ResetPasswordRequest(string Email);

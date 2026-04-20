@@ -1,16 +1,18 @@
-﻿using CondoNet.Auth.Core.DTOs;
-using CondoNet.Auth.Core.Entities;
+﻿using CondoNet.Auth.Core.Entities;
 using CondoNet.Auth.Core.Interfaces;
 using CondoNet.Auth.Infrastructure.Persistence;
-using CondoNet.Shared;
+using CondoNet.Shared.DTOs;
+using CondoNet.Shared.Events;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 namespace CondoNet.Auth.Infrastructure.Services
 {
-    public class AuthService(AuthDbContext db, IIdentityService identityService) : IAuthService
+    public class AuthService(AuthDbContext db, IIdentityService identityService, IPublishEndpoint publishEndpoint) : IAuthService
     {
         private readonly AuthDbContext _db = db;
         private readonly IIdentityService _identityService = identityService;
+        private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;
 
         public async Task<Result<LoginResponse>> LoginAsync(LoginRequest request)
         {
@@ -19,10 +21,10 @@ namespace CondoNet.Auth.Infrastructure.Services
             // 1. Buscamos usuario con sus contextos y roles
             var user = await _db.Users
                 .Include(u => u.Contexts)
-                    .ThenInclude(c => c.Role)
+                    .ThenInclude(c => c.Roles)
                         .ThenInclude(r => r.RolePermissions)
                             .ThenInclude(rp => rp.Permission)
-                .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail.ToLower());
 
             if (user == null || !_identityService.VerifyPassword(request.Password, user.PasswordHash))
             {
@@ -58,20 +60,35 @@ namespace CondoNet.Auth.Infrastructure.Services
             _db.RefreshTokens.Add(refreshTokenEntity);
             await _db.SaveChangesAsync();
 
+            var userPermissions = activeContexts
+                .SelectMany(c => c.Roles.SelectMany(p => p.RolePermissions))
+                .Select(rp => new Permissions(rp.Permission.Id, rp.Permission.Name))
+                .Distinct()
+                .ToList();
+
             // 5. Mapear respuesta
             var contextResponses = activeContexts.Select(c => new AvailableContextResponse(
                 c.Id,
                 c.OrganizationId,
                 c.CondoId,
-                c.RoleId,
-                c.Role // Aquí pasamos el objeto Role completo o el nombre según tu record
+                [.. c.Roles.Select(r => r.Name)] // Aquí pasamos el objeto Role completo o el nombre según tu record
             )).ToList();
+
+            var primaryContext = activeContexts.FirstOrDefault();
+
+            await _publishEndpoint.Publish(new UserLoggedInEvents(
+                user.Id,
+                primaryContext?.CondoId,
+                user.FullName,
+                DateTime.UtcNow
+            ));
 
             return Result<LoginResponse>.Success(new LoginResponse(
                 Token: token,
                 FullName: user.FullName,
                 Contexts: contextResponses,
-                RefreshToken: refreshToken
+                RefreshToken: refreshToken,
+                Permissions: userPermissions
             ));
         }
     }

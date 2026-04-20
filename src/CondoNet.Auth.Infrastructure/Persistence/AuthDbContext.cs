@@ -13,6 +13,7 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : DbContext(
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>(); // Usamos la clase explícita
     public DbSet<User> Users => Set<User>();
     public DbSet<UserContext> UserContexts => Set<UserContext>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -85,10 +86,6 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : DbContext(
                 .HasForeignKey(rp => rp.RoleId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasMany(uc => uc.Contexts)
-                .WithOne(c => c.Role)
-                .HasForeignKey(c => c.RoleId)
-                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<RolePermission>(entity =>
@@ -123,9 +120,9 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : DbContext(
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(d => d.Role)
+            entity.HasMany(d => d.Roles)
                 .WithMany(p => p.Contexts)
-                .HasForeignKey(d => d.RoleId);
+                .UsingEntity(j => j.ToTable("userContextRoles"));
         });
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AuthDbContext).Assembly);

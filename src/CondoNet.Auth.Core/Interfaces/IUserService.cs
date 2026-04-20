@@ -1,5 +1,4 @@
-﻿using CondoNet.Auth.Core.DTOs;
-using CondoNet.Shared;
+﻿using CondoNet.Shared.DTOs;
 
 namespace CondoNet.Auth.Core.Interfaces
 {

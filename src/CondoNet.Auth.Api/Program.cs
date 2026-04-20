@@ -17,8 +17,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ")); // Asegúrate que coincida con tu .env/appsettings
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+});
+
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()
     ?? throw new InvalidOperationException("JwtSettings no configurado.");
+
+var rabbitMqSettings = builder.Configuration.GetSection("RabbitMQ").Get<RabbitMqSettings>()
+    ?? throw new InvalidOperationException("RabbitMQ no configurado.");
 
 // 2. Base de Datos
 builder.Services.AddDbContext<AuthDbContext>(options =>
@@ -26,7 +34,7 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
     b => b.MigrationsAssembly("CondoNet.Auth.Infrastructure")));
 
 // 3. Registro de Servicios Estandarizados (DI)
-//builder.Services.AddScoped();
+builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IContextService, ContextService>();
@@ -72,11 +80,12 @@ builder.Services.AddMassTransit(x =>
 {
     x.UsingRabbitMq((context, cfg) =>
     {
-        var settings = builder.Configuration.GetSection("RabbitMQ").Get<RabbitMqSettings>();
-        cfg.Host(settings?.Host ?? "localhost", h =>
+        // Usamos solo el nombre del host (localhost o rabbitmq)
+        cfg.Host(rabbitMqSettings.Host, (ushort)rabbitMqSettings.Port, "/", h =>
         {
-            h.Username(settings?.Username ?? "guest");
-            h.Password(settings?.Password ?? "guest");
+            // Configuramos el puerto por separado
+            h.Username(rabbitMqSettings.Username);
+            h.Password(rabbitMqSettings.Password);
         });
     });
 });

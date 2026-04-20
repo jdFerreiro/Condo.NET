@@ -1,6 +1,6 @@
-﻿using CondoNet.Auth.Core.DTOs;
-using CondoNet.Auth.Core.Entities;
+﻿using CondoNet.Auth.Core.Entities;
 using CondoNet.Auth.Core.Interfaces;
+using CondoNet.Shared.DTOs;
 using CondoNet.Shared.Settings;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
@@ -15,15 +15,18 @@ namespace CondoNet.Auth.Infrastructure.Services
         {
             // 1. Crear Claims con la data del Contexto
             var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, userId.ToString()),
-            new("org_id", context.OrganizationId.ToString()),
-            new("role_id", context.RoleId.ToString()),
-            new(ClaimTypes.Role, context.Role.Name)
-        };
+                {
+                    new(ClaimTypes.NameIdentifier, userId.ToString()),
+                    new("org_id", context.OrganizationId.ToString()),
+                };
 
             if (context.CondoId.HasValue)
                 claims.Add(new("condo_id", context.CondoId.Value.ToString()));
+
+            foreach (var role in context.Roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role.Name));
+            }
 
             // 2. Generar el Token (usa tu lógica de JwtSecurityTokenHandler)
             var token = "token_generado_con_claims_de_contexto";
@@ -31,8 +34,9 @@ namespace CondoNet.Auth.Infrastructure.Services
             return new LoginResponse(
                 Token: token,
                 FullName: context.User.FullName,
-                Contexts: new(), // Opcional o vacío ya que ya seleccionó
-                RefreshToken: "..."
+                Contexts: [], // Opcional o vacío ya que ya seleccionó
+                RefreshToken: "...",
+                Permissions: [] // Opcional, podrías incluir permisos específicos del contexto
             );
         }
     }

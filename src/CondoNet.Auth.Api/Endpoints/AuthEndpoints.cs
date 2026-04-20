@@ -1,5 +1,5 @@
-﻿using CondoNet.Auth.Core.DTOs;
-using CondoNet.Auth.Core.Interfaces;
+﻿using CondoNet.Auth.Core.Interfaces;
+using CondoNet.Shared.DTOs;
 
 namespace CondoNet.Auth.Api.Endpoints;
 
@@ -21,5 +21,16 @@ public static class AuthEndpoints
         })
         .AllowAnonymous()
         .WithName("Login");
+
+        group.MapPost("/logout", async (LogoutRequest request, ILogoutService logoutService) =>
+        {
+            var result = await logoutService.LogoutAsync(request.RefreshToken);
+
+            return result.IsSuccess
+                ? Results.NoContent()
+                : Results.BadRequest(result.Error);
+        })
+        .RequireAuthorization() // Es buena práctica que el logout esté autenticado
+        .WithName("Logout");
     }
 }

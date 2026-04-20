@@ -1,4 +1,4 @@
-﻿namespace CondoNet.Auth.Core.DTOs;
+﻿namespace CondoNet.Shared.DTOs;
 
 public record CreateUserRequest(
     string Email,

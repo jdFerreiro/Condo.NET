@@ -1,5 +1,5 @@
-﻿using CondoNet.Auth.Core.DTOs;
-using CondoNet.Auth.Core.Interfaces;
+﻿using CondoNet.Auth.Core.Interfaces;
+using CondoNet.Shared.DTOs;
 using System.Security.Claims;
 
 namespace CondoNet.Auth.Api.Endpoints;

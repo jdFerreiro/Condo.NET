@@ -1,22 +1,16 @@
-﻿using global::CondoNet.Auth.Core.DTOs;
-using global::CondoNet.Auth.Core.Entities;
-using global::CondoNet.Auth.Core.Interfaces;
-using global::CondoNet.Auth.Infrastructure.Persistence;
-using global::CondoNet.Shared;
+﻿using CondoNet.Auth.Core.Entities;
+using CondoNet.Auth.Core.Interfaces;
+using CondoNet.Auth.Infrastructure.Persistence;
+using CondoNet.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using BC = BCrypt.Net.BCrypt;
 
 namespace CondoNet.Auth.Infrastructure.Services
 {
-    public class ApiKeyService : IApiKeyService
+    public class ApiKeyService(AuthDbContext db) : IApiKeyService
     {
-        private readonly AuthDbContext _db;
-
-        public ApiKeyService(AuthDbContext db)
-        {
-            _db = db;
-        }
+        private readonly AuthDbContext _db = db;
 
         public async Task<Result<ApiKeyResponse>> CreateApiKeyAsync(Guid orgId, string description)
         {

@@ -1,8 +1,7 @@
-﻿using CondoNet.Auth.Core.DTOs;
-using CondoNet.Auth.Core.Entities;
+﻿using CondoNet.Auth.Core.Entities;
 using CondoNet.Auth.Core.Interfaces;
 using CondoNet.Auth.Infrastructure.Persistence;
-using CondoNet.Shared;
+using CondoNet.Shared.DTOs;
 using CondoNet.Shared.Events;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -36,13 +35,11 @@ namespace CondoNet.Auth.Infrastructure.Services
             _db.Users.Add(newUser);
             await _db.SaveChangesAsync();
 
-            await _publishEndpoint.Publish(new UserCreatedEvent
-            {
-                UserId = newUser.Id,
-                Email = newUser.Email,
-                FullName = newUser.FullName
-            });
-
+            await _publishEndpoint.Publish(new UserCreatedEvent(
+                newUser.Id,
+                newUser.Email,
+                newUser.FullName
+            ));
 
             return Result<UserResponse>.Success(
                 new UserResponse(newUser.Id, newUser.Email, newUser.FullName, newUser.IsActive));

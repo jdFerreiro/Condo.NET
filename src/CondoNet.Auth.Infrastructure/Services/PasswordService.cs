@@ -1,22 +1,19 @@
 ﻿using CondoNet.Auth.Core.Entities;
 using CondoNet.Auth.Core.Interfaces;
 using CondoNet.Auth.Infrastructure.Persistence;
-using CondoNet.Shared;
+using CondoNet.Shared.DTOs;
+using CondoNet.Shared.Events;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 
 namespace CondoNet.Auth.Infrastructure.Services
 {
-    public class PasswordService : IPasswordService
+    public class PasswordService(AuthDbContext db, IIdentityService identityService, IPublishEndpoint publishEndpoint) : IPasswordService
     {
-        private readonly AuthDbContext _db;
-        private readonly IIdentityService _identityService;
-
-        public PasswordService(AuthDbContext db, IIdentityService identityService)
-        {
-            _db = db;
-            _identityService = identityService;
-        }
+        private readonly AuthDbContext _db = db;
+        private readonly IIdentityService _identityService = identityService;
+        private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;
 
         public async Task<Result<bool>> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
         {
@@ -31,6 +28,9 @@ namespace CondoNet.Auth.Infrastructure.Services
             tokens.ForEach(t => t.IsRevoked = true);
 
             await _db.SaveChangesAsync();
+
+            await _publishEndpoint.Publish(new PasswordChangedEvent(user.Id, user.Email, DateTime.UtcNow));
+
             return Result<bool>.Success(true);
         }
 
@@ -51,7 +51,9 @@ namespace CondoNet.Auth.Infrastructure.Services
             });
 
             await _db.SaveChangesAsync();
-            // TODO: Enviar email (podemos disparar un evento de RabbitMQ aquí luego)
+
+            await _publishEndpoint.Publish(new PasswordResetRequestedEvent(user.Id, user.Email, token, DateTime.UtcNow.AddMinutes(15)));
+
             return Result<bool>.Success(true);
         }
 
