@@ -1,4 +1,5 @@
-﻿using CondoNet.Auth.Infrastructure.Persistence;
+﻿using CondoNet.Auth.Core.Interfaces;
+using CondoNet.Auth.Infrastructure.Persistence;
 using CondoNet.Shared.DTOs;
 using CondoNet.Shared.Events;
 using MassTransit;
@@ -6,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CondoNet.Auth.Infrastructure.Services
 {
-    public class LogoutService(AuthDbContext db, IPublishEndpoint publishEndpoint)
+    public class LogoutService(AuthDbContext db, IPublishEndpoint publishEndpoint) : ILogoutService
     {
         private readonly AuthDbContext _db = db;
         private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;

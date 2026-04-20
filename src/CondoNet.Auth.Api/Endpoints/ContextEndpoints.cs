@@ -8,7 +8,9 @@ namespace CondoNet.Auth.Api.Endpoints
     {
         public static void MapContextEndpoints(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/api/auth/context").RequireAuthorization();
+            var group = app.MapGroup("/api/auth/context")
+                .WithTags("Gestión de Contextos")
+                .RequireAuthorization();
 
             // 1. Listar contextos disponibles
             group.MapGet("/available", async (IContextService contextService, ClaimsPrincipal user) =>
@@ -28,7 +30,7 @@ namespace CondoNet.Auth.Api.Endpoints
                 var context = await contextService.ValidateAndGetContextAsync(userId, request.ContextId);
 
                 if (context is null)
-                    return Results.Problem("Contexto no válido o inactivo", statusCode: 401);
+                    return Results.Problem("Contexto no válido o inactivo", statusCode: 404);
 
                 // Generamos el token que ya incluye OrganizationId, CondoId y Role
                 var loginResponse = await tokenService.GenerateContextTokenAsync(userId, context);
