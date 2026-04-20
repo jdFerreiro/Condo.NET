@@ -9,9 +9,27 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Serilog;
+using Serilog.Events;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configurar Serilog antes de builder.Build()
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning) // Evita spam de logs internos de .NET
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Application", "AuthService") // Identifica que este log es de Auth
+    .WriteTo.Console()
+    .WriteTo.File("Logs/log-.txt",
+        rollingInterval: RollingInterval.Day, // Un archivo por día: log-20240321.txt
+        retainedFileCountLimit: 7,            // Borra logs viejos automáticamente (guarda 1 semana)
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] [{CorrelationId}] {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 // 1. Configuración de Settings (Fuertemente tipados)
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
@@ -128,6 +146,27 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = string.Empty;
     });
 }
+
+// Dentro de Program.cs antes de app.Run()
+app.Use(async (context, next) =>
+{
+    var condoId = context.User.FindFirst("condo_id")?.Value ?? "N/A";
+    var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Anonymous";
+    if (!context.Request.Headers.TryGetValue("X-Correlation-ID", out var correlationId))
+    {
+        correlationId = Guid.NewGuid().ToString();
+    }
+
+    using (Serilog.Context.LogContext.PushProperty("CondoId", condoId))
+    using (Serilog.Context.LogContext.PushProperty("UserId", userId))
+    using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
+    {
+        // 3. Añadirlo a la respuesta para que el cliente pueda reportarlo en caso de error
+        context.Response.Headers.Append("X-Correlation-ID", correlationId);
+
+        await next();
+    }
+});
 
 app.UseHttpsRedirection();
 app.UseAuthentication();

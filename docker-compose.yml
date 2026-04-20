@@ -58,7 +58,9 @@ services:
       - rabbitmq
     ports:
       - "8080:8080"
-
+    volumes:
+      - ./logs/auth:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
+    
   # assets-service:
   #   build:
   #     context: .
