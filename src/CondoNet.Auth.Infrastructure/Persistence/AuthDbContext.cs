@@ -91,8 +91,6 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : DbContext(
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
-
-        // 2. Roles y Permisos (Muchos a Muchos con clase explícita)
         modelBuilder.Entity<RolePermission>(entity =>
         {
             entity.ToTable("rolePermissions");
@@ -107,7 +105,6 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : DbContext(
                 .HasForeignKey(rp => rp.PermissionId);
         });
 
-        // 1. Usuarios
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("users");
@@ -116,7 +113,6 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : DbContext(
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
-        // 3. Contextos de Usuario
         modelBuilder.Entity<UserContext>(entity =>
         {
             entity.ToTable("userContexts");
@@ -132,8 +128,6 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : DbContext(
                 .HasForeignKey(d => d.RoleId);
         });
 
-
-        // 5. Aplicar configuraciones externas (Seed Data)
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AuthDbContext).Assembly);
     }
 }

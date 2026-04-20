@@ -1,11 +1,9 @@
-﻿namespace CondoNet.Auth.Api.DTOs;
+﻿namespace CondoNet.Auth.Core.DTOs;
 
 public record CreateUserRequest(
     string Email,
     string Password,
-    string FullName,
-    string Role, // OWNER, EXTERNAL
-    Guid CondoId
+    string FullName
 );
 
 public record UserResponse(

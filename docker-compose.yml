@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # --- INFRAESTRUCTURA ---
   # Base de datos exclusiva para Auth
@@ -16,17 +14,17 @@ services:
       - auth_db_data:/var/lib/postgresql/data
 
   # Base de datos exclusiva para Assets
-  db.asset:
-    image: postgres:15-alpine
-    container_name: condonet.db.asset
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${DB_NAME_ASSETS}
-    ports:
-      - "5434:5432" # Otro puerto diferente
-    volumes:
-      - asset_db_data:/var/lib/postgresql/data
+  # db.asset:
+  #   image: postgres:15-alpine
+  #   container_name: condonet.db.asset
+  #   environment:
+  #     - POSTGRES_USER=${POSTGRES_USER}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #     - POSTGRES_DB=${DB_NAME_ASSETS}
+  #   ports:
+  #     - "5434:5432" # Otro puerto diferente
+  #   volumes:
+  #     - asset_db_data:/var/lib/postgresql/data
 
   # Accceso a RabbitMQ
   rabbitmq:
@@ -56,30 +54,33 @@ services:
       - RabbitMqSettings__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMqSettings__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
     depends_on:
-      - db
+      - db.auth
       - rabbitmq
     ports:
       - "8080:8080"
 
-  assets-service:
-    build:
-      context: .
-      dockerfile: src/CondoNet.Assets.Api/Dockerfile
-    container_name: condonet_assets
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=db;Database=${DB_NAME_ASSETS};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};
-      - JwtSettings__Secret=${JWT_SECRET}
-      - JwtSettings__Issuer=${JWT_ISSUER}
-      - JwtSettings__Audience=${JWT_AUDIENCE}
-      - RabbitMqSettings__Host=rabbitmq
-      - RabbitMqSettings__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
-      - RabbitMqSettings__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
-    depends_on:
-      - db
-      - rabbitmq
-    ports:
-      - "8081:8080"
+  # assets-service:
+  #   build:
+  #     context: .
+  #     dockerfile: src/CondoNet.Assets.Api/Dockerfile
+  #   container_name: condonet_assets
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__DefaultConnection=Host=db;Database=${DB_NAME_ASSETS};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};
+  #     - JwtSettings__Secret=${JWT_SECRET}
+  #     - JwtSettings__Issuer=${JWT_ISSUER}
+  #     - JwtSettings__Audience=${JWT_AUDIENCE}
+  #     - RabbitMqSettings__Host=rabbitmq
+  #     - RabbitMqSettings__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
+  #     - RabbitMqSettings__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+  #   depends_on:
+  #     - db.asset
+  #     - rabbitmq
+  #   ports:
+  #     - "8081:8080"
 
 volumes:
   pgdata:
+  auth_db_data:  # Asegúrate de que este nombre sea EXACTO al que pusiste en db.auth
+  # asset_db_data: # Y este para el de assets
+  

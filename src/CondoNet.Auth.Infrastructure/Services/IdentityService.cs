@@ -1,6 +1,7 @@
 ﻿using CondoNet.Auth.Core.Entities;
 using CondoNet.Auth.Core.Interfaces;
-using Microsoft.Extensions.Configuration;
+using CondoNet.Shared.Settings;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -10,8 +11,9 @@ using BC = BCrypt.Net.BCrypt;
 
 namespace CondoNet.Auth.Infrastructure.Services;
 
-public class IdentityService(IConfiguration config) : IIdentityService
+public class IdentityService(IOptions<JwtSettings> jwtSettings) : IIdentityService
 {
+    private readonly JwtSettings _jwtSettings = jwtSettings.Value;
     public string HashPassword(string password) => BC.HashPassword(password);
 
     public bool VerifyPassword(string password, string hashedPassword)
@@ -27,30 +29,38 @@ public class IdentityService(IConfiguration config) : IIdentityService
 
     public string GenerateJwtToken(User user, UserContext context)
     {
+
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
-            new("fullMame", user.FullName),
-            new("orgId", context.OrganizationId.ToString()),
-            new("roleId", context.Role.Id.ToString()),
-            new("roleName", context.Role.Name),
-            new("condoId", context.CondoId?.ToString() ?? string.Empty)
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new("OrganizationId", context.OrganizationId.ToString()),
+            new("RoleId", context.RoleId.ToString()),
+            new("Role", context.Role.Name),
+            new(ClaimTypes.Role, context.Role.Name)
         };
 
+        // Si el contexto tiene un condominio específico, lo agregamos
+        if (context.CondoId.HasValue)
+        {
+            claims.Add(new("CondoId", context.CondoId.Value.ToString()));
+        }
+
+        // Agregamos los permisos del role
         foreach (var p in context.Role.RolePermissions)
         {
             claims.Add(new Claim("permissions", p.Permission.Name));
         }
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["JwtSettings:Key"]!));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: config["JwtSettings:Issuer"],
-            audience: config["JwtSettings:Audience"],
+            issuer: _jwtSettings.Issuer,
+            audience: _jwtSettings.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(8),
+            expires: DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
             signingCredentials: creds
         );
 

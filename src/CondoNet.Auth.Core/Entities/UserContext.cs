@@ -8,11 +8,9 @@
         public Guid? CondoId { get; set; }
         public ContextStatus Status { get; set; } = ContextStatus.Active;
 
-
         // Cambio: Referencia al ID del Rol
         public int RoleId { get; set; }
         public Role Role { get; set; } = null!;
-
         public User User { get; set; } = null!;
     }
 

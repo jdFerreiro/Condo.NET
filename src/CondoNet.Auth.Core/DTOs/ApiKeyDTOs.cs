@@ -1,4 +1,4 @@
-﻿namespace CondoNet.Auth.Api.DTOs;
+﻿namespace CondoNet.Auth.Core.DTOs;
 
 public record CreateApiKeyRequest(string Description);
 

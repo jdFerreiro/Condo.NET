@@ -35,6 +35,7 @@
     <ProjectReference Include="..\CondoNet.Auth.Core\CondoNet.Auth.Core.csproj" />
     <ProjectReference Include="..\CondoNet.Auth.Infrastructure\CondoNet.Auth.Infrastructure.csproj" />
     <ProjectReference Include="..\CondoNet.Shared\CondoNet.Shared.csproj" />
+	<InternalsVisibleTo Include="CondoNet.Auth.Tests.Integration" />
   </ItemGroup>
 
 </Project>

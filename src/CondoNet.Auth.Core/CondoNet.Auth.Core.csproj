@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CondoNet.Shared\CondoNet.Shared.csproj" />
+  </ItemGroup>
+
 </Project>
