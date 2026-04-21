@@ -1,4 +1,4 @@
-﻿namespace CondoNet.Shared.DTOs
+﻿namespace CondoNet.Shared.Auth.DTOs
 {
     public record LoginRequest(string Email, string Password);
 

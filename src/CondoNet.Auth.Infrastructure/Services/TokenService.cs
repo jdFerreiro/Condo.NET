@@ -1,6 +1,6 @@
 ﻿using CondoNet.Auth.Core.Entities;
 using CondoNet.Auth.Core.Interfaces;
-using CondoNet.Shared.DTOs;
+using CondoNet.Shared.Auth.DTOs;
 using CondoNet.Shared.Settings;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;

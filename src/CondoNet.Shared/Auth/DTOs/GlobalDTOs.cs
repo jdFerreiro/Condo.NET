@@ -1,4 +1,4 @@
-﻿namespace CondoNet.Shared.DTOs
+﻿namespace CondoNet.Shared.Auth.DTOs
 {
     // En CondoNet.Shared
     public record Result<T>(bool IsSuccess, T? Value, string? Error = null)

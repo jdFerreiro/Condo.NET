@@ -1,4 +1,4 @@
-﻿namespace CondoNet.Shared.Events;
+﻿namespace CondoNet.Shared.Auth.Events;
 
 public record UserCreatedEvent
 (
