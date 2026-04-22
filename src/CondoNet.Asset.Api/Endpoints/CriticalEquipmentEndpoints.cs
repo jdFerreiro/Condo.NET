@@ -1,0 +1,76 @@
+namespace CondoNet.Asset.Api.Endpoints
+{
+    using CondoNet.Asset.Core.Entities;
+    using CondoNet.Asset.Infraestructure.Persistence;
+    using Microsoft.AspNetCore.Builder;
+    using Microsoft.AspNetCore.Http;
+    using Microsoft.AspNetCore.Routing;
+    using Microsoft.EntityFrameworkCore;
+
+    public static class CriticalEquipmentEndpoints
+    {
+        public static void MapCriticalEquipmentEndpoints(this IEndpointRouteBuilder app)
+        {
+            var group = app.MapGroup("/api/assets/critical-equipments")
+                .WithTags("CriticalEquipments")
+                .RequireAuthorization();
+
+            group.MapGet("", async (AssetDbContext context) =>
+                Results.Ok(await context.CriticalEquipments.AsNoTracking().ToListAsync()));
+
+            group.MapGet("/{id:guid}", async (Guid id, AssetDbContext context) =>
+            {
+                var entity = await context.CriticalEquipments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+                return entity is not null ? Results.Ok(entity) : Results.NotFound();
+            });
+
+            group.MapPost("", async (CreateCriticalEquipmentRequest request, AssetDbContext context) =>
+            {
+                var entity = new CriticalEquipment
+                {
+                    CondominiumId = request.CondominiumId,
+                    Name = request.Name,
+                    Brand = request.Brand,
+                    Model = request.Model,
+                    InstallationDate = request.InstallationDate,
+                    MaintenanceFrequencyDays = request.MaintenanceFrequencyDays,
+                    ManualUrl = request.ManualUrl
+                };
+
+                context.CriticalEquipments.Add(entity);
+                await context.SaveChangesAsync();
+                return Results.Created($"/api/assets/critical-equipments/{entity.Id}", entity);
+            });
+
+            group.MapPut("/{id:guid}", async (Guid id, UpdateCriticalEquipmentRequest request, AssetDbContext context) =>
+            {
+                var entity = await context.CriticalEquipments.FirstOrDefaultAsync(x => x.Id == id);
+                if (entity is null) return Results.NotFound();
+
+                entity.CondominiumId = request.CondominiumId;
+                entity.Name = request.Name;
+                entity.Brand = request.Brand;
+                entity.Model = request.Model;
+                entity.InstallationDate = request.InstallationDate;
+                entity.MaintenanceFrequencyDays = request.MaintenanceFrequencyDays;
+                entity.ManualUrl = request.ManualUrl;
+
+                await context.SaveChangesAsync();
+                return Results.Ok(entity);
+            });
+
+            group.MapDelete("/{id:guid}", async (Guid id, AssetDbContext context) =>
+            {
+                var entity = await context.CriticalEquipments.FirstOrDefaultAsync(x => x.Id == id);
+                if (entity is null) return Results.NotFound();
+
+                context.CriticalEquipments.Remove(entity);
+                await context.SaveChangesAsync();
+                return Results.NoContent();
+            });
+        }
+
+        private sealed record CreateCriticalEquipmentRequest(Guid CondominiumId, string Name, string Brand, string Model, DateTime InstallationDate, int MaintenanceFrequencyDays, string ManualUrl);
+        private sealed record UpdateCriticalEquipmentRequest(Guid CondominiumId, string Name, string Brand, string Model, DateTime InstallationDate, int MaintenanceFrequencyDays, string ManualUrl);
+    }
+}

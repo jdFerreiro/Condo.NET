@@ -2,13 +2,16 @@
 using CondoNet.Asset.Core.Interfaces;
 using CondoNet.Asset.Infraestructure.Persistence;
 using CondoNet.Shared.Asset.DTOs;
+using CondoNet.Shared.Asset.Events;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 namespace CondoNet.Asset.Infraestructure.Services
 {
-    public class AssetService(AssetDbContext context) : IAssetService
+    public class AssetService(AssetDbContext context, IPublishEndpoint publishEndpoint) : IAssetService
     {
         private readonly AssetDbContext _context = context;
+        private readonly IPublishEndpoint _publishEndpoint = publishEndpoint; // 1. Inyectamos el endpoint de publicación
 
         public async Task<bool> BulkImportUnitsAsync(BulkImportRequest request)
         {
@@ -43,6 +46,7 @@ namespace CondoNet.Asset.Infraestructure.Services
                 }
 
                 // 3. Crear Unidades
+                // Proyectamos a una lista física (.ToList()) para poder iterar y leer los IDs generados después del SaveChanges
                 var unitsToInsert = request.Units.Select(dto => new Unit
                 {
                     Identifier = dto.Identifier,
@@ -50,13 +54,31 @@ namespace CondoNet.Asset.Infraestructure.Services
                     Type = dto.Type,
                     OwnerEmail = dto.OwnerEmail,
                     TowerId = towers.First(t => t.Name == dto.TowerName).Id,
-                    // El OrganizationId se asigna automáticamente en el SaveChanges del DbContext
-                });
+                }).ToList();
 
                 await _context.Units.AddRangeAsync(unitsToInsert);
                 await _context.SaveChangesAsync();
-
                 await transaction.CommitAsync();
+
+                // 4. EMISIÓN DEL EVENTO (Consistencia Eventual)
+                // Se ejecuta fuera del bloque try/catch transaccional para que solo ocurra tras el commit exitoso
+
+                // Extraemos el OrganizationId de la primera unidad generada por el interceptor de EF Core
+                var organizationId = unitsToInsert.First().OrganizationId;
+
+                var eventUnits = unitsToInsert.Select(u => new ImportedUnitDto(
+                    u.Id,
+                    u.Identifier,
+                    u.Aliquot,
+                    u.OwnerEmail
+                )).ToList();
+
+                await _publishEndpoint.Publish(new UnitsImported(
+                    request.CondominiumId,
+                    organizationId,
+                    eventUnits
+                ));
+
                 return true;
             }
             catch (Exception)
@@ -66,4 +88,5 @@ namespace CondoNet.Asset.Infraestructure.Services
             }
         }
     }
+
 }

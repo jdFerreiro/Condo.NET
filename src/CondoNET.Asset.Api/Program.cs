@@ -2,6 +2,7 @@ using CondoNet.Asset.Api.Endpoints;
 using CondoNet.Asset.Core.Interfaces;
 using CondoNet.Asset.Infraestructure.Persistence;
 using CondoNet.Asset.Infraestructure.Services;
+using CondoNet.Assets.Workers;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -42,17 +43,21 @@ try
     {
         x.SetKebabCaseEndpointNameFormatter();
 
+        // REGISTRO DEL CONSUMIDOR (Worker)
+        x.AddConsumer<BulkImportConsumer>();
+
         x.UsingRabbitMq((context, cfg) =>
         {
             cfg.Host(builder.Configuration["RabbitMq:Host"], "/", h =>
             {
-                h.Username(builder.Configuration["RabbitMq:Username"]!);
-                h.Password(builder.Configuration["RabbitMq:Password"]!);
+                h.Username(builder.Configuration["RabbitMq:Username"]);
+                h.Password(builder.Configuration["RabbitMq:Password"]);
             });
 
             cfg.ConfigureEndpoints(context);
         });
     });
+
 
     // 3. Seguridad (JWT)
     builder.Services.AddAuthentication().AddJwtBearer();
@@ -71,7 +76,11 @@ try
     app.UseAuthorization();
 
     // 4. Mapeo de Minimal APIs
-    app.MapAssetEndpoints();
+    app.MapCondominiumEndpoints();
+    app.MapTowerEndpoints();
+    app.MapUnitEndpoints();
+    app.MapCommonAssetEndpoints();
+    app.MapCriticalEquipmentEndpoints();
 
     app.Run();
 }
