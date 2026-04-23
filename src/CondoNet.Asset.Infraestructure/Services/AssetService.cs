@@ -74,8 +74,8 @@ namespace CondoNet.Asset.Infraestructure.Services
                 )).ToList();
 
                 await _publishEndpoint.Publish(new UnitsImported(
-                    request.CondominiumId,
                     organizationId,
+                    request.CondominiumId,
                     eventUnits
                 ));
 

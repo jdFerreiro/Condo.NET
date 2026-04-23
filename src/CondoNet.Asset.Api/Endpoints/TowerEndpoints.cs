@@ -13,7 +13,7 @@ namespace CondoNet.Asset.Api.Endpoints
         {
             var group = app.MapGroup("/api/assets/towers")
                 .WithTags("Towers")
-                .RequireAuthorization();
+                .RequireAuthorization("RequireAdminRole"); // Aplica la directiva de Admin;
 
             group.MapGet("", async (AssetDbContext context) =>
                 Results.Ok(await context.Towers.AsNoTracking().ToListAsync()));

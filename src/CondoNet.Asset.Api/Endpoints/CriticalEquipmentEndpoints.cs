@@ -1,7 +1,10 @@
 namespace CondoNet.Asset.Api.Endpoints
 {
     using CondoNet.Asset.Core.Entities;
+    using CondoNet.Asset.Core.Interfaces;
     using CondoNet.Asset.Infraestructure.Persistence;
+    using CondoNet.Shared.Asset.Events;
+    using MassTransit;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Routing;
@@ -13,7 +16,7 @@ namespace CondoNet.Asset.Api.Endpoints
         {
             var group = app.MapGroup("/api/assets/critical-equipments")
                 .WithTags("CriticalEquipments")
-                .RequireAuthorization();
+                .RequireAuthorization("RequireAdminRole");
 
             group.MapGet("", async (AssetDbContext context) =>
                 Results.Ok(await context.CriticalEquipments.AsNoTracking().ToListAsync()));
@@ -24,7 +27,7 @@ namespace CondoNet.Asset.Api.Endpoints
                 return entity is not null ? Results.Ok(entity) : Results.NotFound();
             });
 
-            group.MapPost("", async (CreateCriticalEquipmentRequest request, AssetDbContext context) =>
+            group.MapPost("", async (CreateCriticalEquipmentRequest request, AssetDbContext context, IPublishEndpoint publishEndpoint, ITenantService tenantService) =>
             {
                 var entity = new CriticalEquipment
                 {
@@ -39,6 +42,15 @@ namespace CondoNet.Asset.Api.Endpoints
 
                 context.CriticalEquipments.Add(entity);
                 await context.SaveChangesAsync();
+
+                await publishEndpoint.Publish(new CriticalEquipmentAdded(
+                    tenantService.GetOrganizationId(),
+                    entity.CondominiumId,
+                    entity.Id,
+                    entity.Name,
+                    entity.MaintenanceFrequencyDays
+                ));
+
                 return Results.Created($"/api/assets/critical-equipments/{entity.Id}", entity);
             });
 

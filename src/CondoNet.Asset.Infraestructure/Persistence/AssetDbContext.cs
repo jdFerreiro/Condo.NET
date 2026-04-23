@@ -45,6 +45,8 @@ namespace CondoNet.Asset.Infraestructure.Persistence
             {
                 entity.HasIndex(e => e.TaxId).IsUnique();
             });
+
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AssetDbContext).Assembly);
         }
 
         // 4. Interceptamos el Guardado para asignar el OrganizationId automáticamente
