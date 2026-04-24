@@ -2,7 +2,6 @@
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
@@ -27,4 +26,8 @@ RUN dotnet publish "./CondoNet.Asset.Api.csproj" -c $BUILD_CONFIGURATION -o /app
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "CondoNet.Asset.Api.dll"]
+# Copia el script wait-for-it.sh
+COPY /wait-for-it.sh ./wait-for-it.sh
+RUN chmod +x ./wait-for-it.sh
+USER $APP_UID
+ENTRYPOINT ["./wait-for-it.sh", "rabbitmq", "5672", "dotnet", "CondoNet.Asset.Api.dll"]

@@ -35,6 +35,9 @@ services:
       - "15673:15672"
     restart: always
     environment:
+      RABBITMQ_DEFAULT_VHOST: /
+      RABBITMQ_DEFAULT_HOST: ${RABBITMQ_DEFAULT_HOST}
+      RABBITMQ_DEFAULT_PORT: ${RABBITMQ_DEFAULT_PORT}
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
 
@@ -44,15 +47,17 @@ services:
       context: .
       dockerfile: src/CondoNet.Auth.Api/Dockerfile
     container_name: condonet_auth
+    restart: always
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=db.auth;Database=${DB_NAME_AUTH};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};
       - JwtSettings__Secret=${JWT_SECRET}
       - JwtSettings__Issuer=${JWT_ISSUER}
       - JwtSettings__Audience=${JWT_AUDIENCE}
-      - RabbitMqSettings__Host=rabbitmq
-      - RabbitMqSettings__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
-      - RabbitMqSettings__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - RabbitMQ__Host=${RABBITMQ_DEFAULT_HOST}
+      - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
+      - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
     depends_on:
       - db.auth
       - rabbitmq
@@ -66,20 +71,24 @@ services:
       context: .
       dockerfile: src/CondoNet.Asset.Api/Dockerfile
     container_name: condonet_assets
+    restart: always
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=db.asset;Database=${DB_NAME_ASSETS};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};
       - JwtSettings__Secret=${JWT_SECRET}
       - JwtSettings__Issuer=${JWT_ISSUER}
       - JwtSettings__Audience=${JWT_AUDIENCE}
-      - RabbitMqSettings__Host=rabbitmq
-      - RabbitMqSettings__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
-      - RabbitMqSettings__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - RabbitMQ__Host=${RABBITMQ_DEFAULT_HOST}
+      - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
+      - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
     depends_on:
       - db.asset
       - rabbitmq
     ports:
-      - "8081:8080"
+      - "8181:8180"
+    volumes:
+      - ./logs/asset:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
 
 volumes:
   pgdata:

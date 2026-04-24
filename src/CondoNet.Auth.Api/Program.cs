@@ -1,8 +1,8 @@
 using CondoNet.Auth.Api.Endpoints;
-using CondoNet.Auth.Api.Middleware;
 using CondoNet.Auth.Core.Interfaces;
 using CondoNet.Auth.Infrastructure.Persistence;
 using CondoNet.Auth.Infrastructure.Services;
+using CondoNet.Shared.Middleware;
 using CondoNet.Shared.Settings;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -134,6 +134,7 @@ builder.Services.AddAuthentication(x =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddHttpClient(); // Para que ApiKeyMiddleware pueda hacer llamadas HTTP
 
 var app = builder.Build();
 

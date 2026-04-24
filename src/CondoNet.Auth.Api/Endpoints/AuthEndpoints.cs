@@ -31,7 +31,7 @@ public static class AuthEndpoints
                 ? Results.NoContent()
                 : Results.BadRequest(result.Error);
         })
-        .RequireAuthorization() // Es buena práctica que el logout esté autenticado
+        .RequireAuthorization("RequiredAnyRole") // Es buena práctica que el logout esté autenticado
         .WithName("Logout");
     }
 }
