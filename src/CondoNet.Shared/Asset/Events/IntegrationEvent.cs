@@ -1,4 +1,4 @@
-﻿namespace CondoNet.Shared.Contracts.Events
+﻿namespace CondoNet.Shared.Asset.Events
 {
     public abstract record IntegrationEvent
     {

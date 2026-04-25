@@ -1,5 +1,4 @@
 ﻿using CondoNet.Shared.Asset.DTOs;
-using CondoNet.Shared.Contracts.Events;
 
 namespace CondoNet.Shared.Asset.Events
 {

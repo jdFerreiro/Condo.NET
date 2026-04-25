@@ -1,8 +1,8 @@
 namespace CondoNet.Asset.Api.Endpoints
 {
     using CondoNet.Asset.Core.Entities;
-    using CondoNet.Asset.Core.Interfaces;
     using CondoNet.Asset.Infraestructure.Persistence;
+    using CondoNet.Shared.Interfaces;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Routing;

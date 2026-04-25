@@ -1,7 +1,7 @@
-﻿using CondoNet.Asset.Core.Interfaces;
+﻿using CondoNet.Shared.Interfaces;
 using Microsoft.AspNetCore.Http;
 
-namespace CondoNet.Asset.Infraestructure.Services
+namespace CondoNet.Shared.Services
 {
     public class TenantService(IHttpContextAccessor httpContextAccessor) : ITenantService
     {

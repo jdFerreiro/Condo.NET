@@ -1,4 +1,4 @@
-﻿namespace CondoNet.Asset.Core.Interfaces
+﻿namespace CondoNet.Shared.Interfaces
 {
     public interface ITenantService
     {
