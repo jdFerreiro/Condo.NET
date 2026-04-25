@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CondoNet.Financial.Core\CondoNet.Financial.Core.csproj" />
+    <ProjectReference Include="..\CondoNet.Financial.Infrastructure\CondoNet.Financial.Infrastructure.csproj" />
+    <ProjectReference Include="..\CondoNet.Shared\CondoNet.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

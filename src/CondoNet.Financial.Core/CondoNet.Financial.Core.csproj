@@ -7,4 +7,8 @@
     <UserSecretsId>f1ad4924-6fea-493a-aa8f-fef64d236a7c</UserSecretsId>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Interfaces\" />
+  </ItemGroup>
+
 </Project>

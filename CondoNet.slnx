@@ -19,5 +19,6 @@
     <Project Path="src/CondoNet.Financial.Api/CondoNet.Financial.Api.csproj" Id="d470a0bb-41f2-40c9-a7a9-1531aa8d1925" />
     <Project Path="src/CondoNet.Financial.Core/CondoNet.Financial.Core.csproj" Id="c8deeaa6-9dda-471b-a417-f2d7f98ec563" />
     <Project Path="src/CondoNet.Financial.Infrastructure/CondoNet.Financial.Infrastructure.csproj" />
+    <Project Path="src/CondoNET.Financial.Worker/CondoNET.Financial.Worker.csproj" Id="e6380701-652e-452b-b73e-2393959686ee" />
   </Folder>
 </Solution>

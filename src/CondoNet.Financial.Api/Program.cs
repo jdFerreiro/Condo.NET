@@ -1,7 +1,4 @@
-using CondoNet.Financial.Api.Services;
-using CondoNet.Financial.Core.Interfaces;
 using CondoNet.Financial.Infrastructure.Persistence;
-using CondoNet.Financial.Infrastructure.Repositories;
 using CondoNet.Shared.Interfaces;
 using CondoNet.Shared.Middleware;
 using CondoNet.Shared.Services;
@@ -154,8 +151,8 @@ try
         });
 
     // 8. Inyección de Dependencias para Servicios y Repositorios
-    builder.Services.AddScoped<IFinancialService, FinancialService>();
-    builder.Services.AddScoped<IFinancialRepository, FinancialRepository>();
+    //builder.Services.AddScoped<IFinancialService, FinancialService>();
+    //builder.Services.AddScoped<IFinancialRepository, FinancialRepository>();
 
     var app = builder.Build();
 
