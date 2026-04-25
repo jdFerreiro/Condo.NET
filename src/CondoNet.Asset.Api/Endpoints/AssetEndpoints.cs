@@ -1,4 +1,4 @@
-﻿using CondoNet.Asset.Infraestructure.Persistence;
+﻿using CondoNet.Asset.Infrastructure.Persistence;
 using CondoNet.Shared.Asset.Events;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;

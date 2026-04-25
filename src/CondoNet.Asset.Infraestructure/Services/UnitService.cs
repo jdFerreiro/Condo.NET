@@ -1,11 +1,11 @@
 using CondoNet.Asset.Core.Interfaces;
-using CondoNet.Asset.Infraestructure.Persistence;
+using CondoNet.Asset.Infrastructure.Persistence;
 using CondoNet.Shared.Asset.DTOs;
 using CondoNet.Shared.Asset.Events;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
-namespace CondoNet.Asset.Infraestructure.Services;
+namespace CondoNet.Asset.Infrastructure.Services;
 
 public class UnitService(AssetDbContext context, IPublishEndpoint publishEndpoint) : IUnitService
 {

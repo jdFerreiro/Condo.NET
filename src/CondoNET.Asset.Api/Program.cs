@@ -1,7 +1,7 @@
 using CondoNet.Asset.Api.Endpoints;
 using CondoNet.Asset.Core.Interfaces;
-using CondoNet.Asset.Infraestructure.Persistence;
-using CondoNet.Asset.Infraestructure.Services;
+using CondoNet.Asset.Infrastructure.Persistence;
+using CondoNet.Asset.Infrastructure.Services;
 using CondoNet.Shared.Interfaces;
 using CondoNet.Shared.Middleware;
 using CondoNet.Shared.Services;

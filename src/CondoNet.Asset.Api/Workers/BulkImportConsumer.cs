@@ -1,5 +1,5 @@
 ﻿using CondoNet.Asset.Core.Entities;
-using CondoNet.Asset.Infraestructure.Persistence;
+using CondoNet.Asset.Infrastructure.Persistence;
 using CondoNet.Assets.API.Mappings;
 using CondoNet.Shared.Asset.Events;
 using MassTransit;

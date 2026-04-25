@@ -3,7 +3,7 @@ using CondoNet.Asset.Core.Interfaces;
 using CondoNet.Shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace CondoNet.Asset.Infraestructure.Persistence
+namespace CondoNet.Asset.Infrastructure.Persistence
 {
     // AssetDbContext.cs
     public class AssetDbContext(DbContextOptions<AssetDbContext> options, ITenantService tenantService) : DbContext(options)

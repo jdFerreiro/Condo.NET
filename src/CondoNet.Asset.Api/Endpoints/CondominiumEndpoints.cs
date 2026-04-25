@@ -1,7 +1,7 @@
 namespace CondoNet.Asset.Api.Endpoints
 {
     using CondoNet.Asset.Core.Entities;
-    using CondoNet.Asset.Infraestructure.Persistence;
+    using CondoNet.Asset.Infrastructure.Persistence;
     using CondoNet.Shared.Asset.Events;
     using CondoNet.Shared.Interfaces;
     using MassTransit;

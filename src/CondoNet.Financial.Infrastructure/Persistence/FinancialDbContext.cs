@@ -1,15 +1,17 @@
 ﻿using CondoNet.Financial.Core.Entities;
-using CondoNet.Shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
-namespace CondoNet.Financial.Infraestructure.Persistence
+namespace CondoNet.Financial.Infrastructure.Persistence
 {
-
-    public class BillingDbContext(DbContextOptions<BillingDbContext> options, ITenantService tenantService) : DbContext(options)
+    public class FinancialDbContext(DbContextOptions<FinancialDbContext> options) : DbContext(options) //, ITenantService tenantService) : DbContext(options)
     {
         // El ID del condominio se obtiene del JWT a través de un servicio de contexto
-        private readonly Guid _condominiunId = tenantService.GetCondominiumId();
-        private readonly Guid _organizationId = tenantService.GetOrganizationId();
+        //private readonly Guid _condominiunId = tenantService.GetCondominiumId();
+        //private readonly Guid _organizationId = tenantService.GetOrganizationId();
+
+        private readonly Guid _condominiunId = Guid.Parse("22222222-2222-2222-2222-222222222222"); // tenantService.GetCondominiumId();
+        private readonly Guid _organizationId = Guid.Parse("11111111-1111-1111-1111-111111111111"); // tenantService.GetOrganizationId();
 
         public DbSet<FinancialSubSection> FinancialSubSections => Set<FinancialSubSection>();
         public DbSet<UnitAccount> UnitAccounts => Set<UnitAccount>();
@@ -19,6 +21,7 @@ namespace CondoNet.Financial.Infraestructure.Persistence
         public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
         public DbSet<Payment> Payments => Set<Payment>();
         public DbSet<BillingConfiguration> BillingConfigurations => Set<BillingConfiguration>();
+        public DbSet<Transaction> Transactions => Set<Transaction>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -74,6 +77,15 @@ namespace CondoNet.Financial.Infraestructure.Persistence
             modelBuilder.Entity<Payment>()
                 .Property(p => p.Method)
                 .HasConversion<string>();
+
+            // Configuración adicional (opcional pero recomendada)
+            modelBuilder.Entity<Transaction>(entity =>
+            {
+
+                entity.Property(t => t.Amount).HasPrecision(18, 2);
+                entity.Property(t => t.Description).HasMaxLength(250);
+            });
+
         }
 
         // Override para asignar automáticamente el OrganizationId al guardar

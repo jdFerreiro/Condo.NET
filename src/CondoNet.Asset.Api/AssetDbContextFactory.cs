@@ -1,4 +1,4 @@
-﻿using CondoNet.Asset.Infraestructure.Persistence;
+﻿using CondoNet.Asset.Infrastructure.Persistence;
 using CondoNet.Shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;

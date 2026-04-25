@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
-namespace CondoNet.Asset.Infraestructure.Migrations
+namespace CondoNet.Asset.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class InitDb : Migration

@@ -3,7 +3,7 @@ using CondoNet.Shared.Asset;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace CondoNet.Asset.Infraestructure.Configurations
+namespace CondoNet.Asset.Infrastructure.Configurations
 {
     public class UnitSeedConfiguration : IEntityTypeConfiguration<Unit>
     {

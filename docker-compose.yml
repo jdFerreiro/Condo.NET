@@ -9,7 +9,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${DB_NAME_AUTH}
     ports:
-      - "5433:5432" # Puerto diferente para evitar conflictos locales
+      - "5433:5432" # Puerto para auth
     volumes:
       - auth_db_data:/var/lib/postgresql/data
 
@@ -22,20 +22,20 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${DB_NAME_ASSETS}
     ports:
-      - "5434:5432" # Otro puerto diferente
+      - "5434:5432" # Puerto para assets
     volumes:
       - asset_db_data:/var/lib/postgresql/data
 
   # Base de datos exclusiva para Financials
   db.financial:
     image: postgres:15-alpine
-    container_name: condonet.db.auth
+    container_name: condonet.db.financial
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${DB_NAME_AUTH}
     ports:
-      - "5435:5432" # Puerto diferente para evitar conflictos locales
+      - "5435:5432" # Puerto para financial
     volumes:
       - financial_db_data:/var/lib/postgresql/data
 
@@ -75,7 +75,8 @@ services:
       - db.auth
       - rabbitmq
     ports:
-      - "8080:8080"
+      - "8080:80"
+      - "8081:443"
     volumes:
       - ./logs/auth:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
     
@@ -99,7 +100,8 @@ services:
       - db.asset
       - rabbitmq
     ports:
-      - "8180:8080"
+      - "8180:80"
+      - "8181:443"
     volumes:
       - ./logs/asset:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
 
@@ -111,7 +113,7 @@ services:
     restart: always
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=db.financial;Database=${DB_NAME_ASSETS};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};
+      - ConnectionStrings__DefaultConnection=Host=db.financial;Database=${DB_NAME_FINANCIAL};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};
       - JwtSettings__Secret=${JWT_SECRET}
       - JwtSettings__Issuer=${JWT_ISSUER}
       - JwtSettings__Audience=${JWT_AUDIENCE}
@@ -123,7 +125,8 @@ services:
       - db.financial
       - rabbitmq
     ports:
-      - "8280:8080"
+      - "8280:80"
+      - "8281:443"
     volumes:
       - ./logs/financial:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
 

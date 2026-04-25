@@ -1,4 +1,4 @@
-﻿namespace CondoNet.Asset.Infraestructure.Configurations
+﻿namespace CondoNet.Asset.Infrastructure.Configurations
 {
     public static class SeedDataConstants
     {
