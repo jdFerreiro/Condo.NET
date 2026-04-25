@@ -2,16 +2,19 @@
 {
     public class CondoExpense : BaseEntity
     {
-        public string Description { get; set; } = string.Empty;
+        public string Description { get; set; } = null!;
         public decimal Amount { get; set; }
-        public ExpenseCategory Category { get; set; }
-        public string DocumentUrl { get; set; } = string.Empty; // Link a S3 con la factura PDF
-        public string DocumentHash { get; set; } = string.Empty; // SHA256 del archivo físico
-
+        public DateTime ExpenseDate { get; set; }
         public int Month { get; set; }
         public int Year { get; set; }
 
-        public virtual Guid? ApprovedById { get; set; }
+        public Guid FinancialSubSectionId { get; set; }
+        public virtual FinancialSubSection FinancialSubSection { get; set; } = null!;
+
+        // Integración Blockchain/Auditoría
+        public string DocumentUrl { get; set; } = null!;
+        public string DocumentHash { get; set; } = null!; // SHA256 para el Merkle Tree
+
     }
 
     public enum ExpenseCategory { Utilities, Maintenance, Payroll, Contingency }

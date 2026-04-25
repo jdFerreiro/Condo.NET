@@ -26,6 +26,19 @@ services:
     volumes:
       - asset_db_data:/var/lib/postgresql/data
 
+  # Base de datos exclusiva para Financials
+  db.financial:
+    image: postgres:15-alpine
+    container_name: condonet.db.auth
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${DB_NAME_AUTH}
+    ports:
+      - "5435:5432" # Puerto diferente para evitar conflictos locales
+    volumes:
+      - financial_db_data:/var/lib/postgresql/data
+
   # Accceso a RabbitMQ
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -86,12 +99,36 @@ services:
       - db.asset
       - rabbitmq
     ports:
-      - "8181:8180"
+      - "8180:8080"
     volumes:
       - ./logs/asset:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
+
+  financial-service:
+    build:
+      context: .
+      dockerfile: src/CondoNet.Financial.Api/Dockerfile
+    container_name: condonet_financial
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db.financial;Database=${DB_NAME_ASSETS};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};
+      - JwtSettings__Secret=${JWT_SECRET}
+      - JwtSettings__Issuer=${JWT_ISSUER}
+      - JwtSettings__Audience=${JWT_AUDIENCE}
+      - RabbitMQ__Host=${RABBITMQ_DEFAULT_HOST}
+      - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
+      - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+    depends_on:
+      - db.financial
+      - rabbitmq
+    ports:
+      - "8280:8080"
+    volumes:
+      - ./logs/financial:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
 
 volumes:
   pgdata:
   auth_db_data:  # Asegúrate de que este nombre sea EXACTO al que pusiste en db.auth
   asset_db_data: # Y este para el de assets
-  
+  financial_db_data: # Y este para el de financials
