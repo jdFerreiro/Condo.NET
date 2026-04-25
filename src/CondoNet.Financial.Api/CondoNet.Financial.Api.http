@@ -1,0 +1,6 @@
+@CondoNet.Financial.Api_HostAddress = http://localhost:5009
+
+GET {{CondoNet.Financial.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

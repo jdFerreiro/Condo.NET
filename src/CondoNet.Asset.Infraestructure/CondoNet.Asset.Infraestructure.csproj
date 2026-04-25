@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CondoNet.Asset.Core\CondoNet.Asset.Core.csproj" />
+    <ProjectReference Include="..\CondoNet.Auth.Core\CondoNet.Auth.Core.csproj" />
     <ProjectReference Include="..\CondoNet.Shared\CondoNet.Shared.csproj" />
   </ItemGroup>
 

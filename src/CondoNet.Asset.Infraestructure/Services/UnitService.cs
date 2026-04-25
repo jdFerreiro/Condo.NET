@@ -1,4 +1,3 @@
-using CondoNet.Asset.Core.Entities;
 using CondoNet.Asset.Core.Interfaces;
 using CondoNet.Asset.Infraestructure.Persistence;
 using CondoNet.Shared.Asset.DTOs;
@@ -8,16 +7,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CondoNet.Asset.Infraestructure.Services;
 
-public class UnitService : IUnitService
+public class UnitService(AssetDbContext context, IPublishEndpoint publishEndpoint) : IUnitService
 {
-    private readonly AssetDbContext _context;
-    private readonly IPublishEndpoint _publishEndpoint;
-
-    public UnitService(AssetDbContext context, IPublishEndpoint publishEndpoint)
-    {
-        _context = context;
-        _publishEndpoint = publishEndpoint;
-    }
+    private readonly AssetDbContext _context = context;
+    private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;
 
     public async Task<List<UnitResponse>> GetUnitsByOwnerAsync(string ownerId)
     {

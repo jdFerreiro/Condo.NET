@@ -33,5 +33,6 @@ namespace CondoNet.Asset.Api
     {
         // Devolvemos un Guid vacío solo para pasar las migraciones de forma segura
         public Guid GetOrganizationId() => Guid.Empty;
+        public Guid GetCondominiumId() => Guid.Empty;
     }
 }

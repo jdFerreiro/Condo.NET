@@ -52,6 +52,12 @@ namespace CondoNet.Asset.Api.Endpoints
                                     .ToListAsync());
             });
 
+            group.MapGet("ByOwner/{ownerEmail}", async (string ownerEmail, AssetDbContext context) =>
+            {
+                return Results.Ok(await context.Units.Where(x => x.OwnerEmail == ownerEmail).ToListAsync());
+            });
+
+
             group.MapGet("/{id:guid}", async (Guid id, AssetDbContext context) =>
             {
                 var entity = await context.Units.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
@@ -134,9 +140,19 @@ namespace CondoNet.Asset.Api.Endpoints
                 await context.SaveChangesAsync();
                 return Results.NoContent();
             });
+
+            group.MapGet("/UnitChange/{newUnitId:guid}", async (Guid newUnitId, IPublishEndpoint publishEndpoint) =>
+            {
+                await publishEndpoint.Publish(new UnitChange(
+                    newUnitId
+               ));
+
+                return Results.Ok();
+            });
         }
 
         private sealed record CreateUnitRequest(Guid TowerId, string Identifier, decimal Aliquot, UnitType Type, string OwnerEmail);
         private sealed record UpdateUnitRequest(Guid TowerId, string Identifier, decimal Aliquot, UnitType Type, string OwnerEmail);
+        private sealed record UnitChange(Guid NewUnitId);
     }
 }

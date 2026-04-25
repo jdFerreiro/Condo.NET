@@ -50,7 +50,7 @@ namespace CondoNet.Shared.Middleware
             catch (Exception ex)
             {
                 context.Response.StatusCode = 500;
-                await context.Response.WriteAsync($"Error interno: {ex.Message} /n Internal: {ex.InnerException.Message} /n StackTrace: {ex.StackTrace}");
+                await context.Response.WriteAsync($"Error interno: {ex.Message} /n Internal: {ex.InnerException!.Message} /n StackTrace: {ex.StackTrace}");
             }
         }
     }
