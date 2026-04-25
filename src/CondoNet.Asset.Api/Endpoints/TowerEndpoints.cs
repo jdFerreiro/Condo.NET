@@ -1,6 +1,7 @@
 namespace CondoNet.Asset.Api.Endpoints
 {
     using CondoNet.Asset.Core.Entities;
+    using CondoNet.Asset.Core.Interfaces;
     using CondoNet.Asset.Infraestructure.Persistence;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Http;
@@ -15,8 +16,15 @@ namespace CondoNet.Asset.Api.Endpoints
                 .WithTags("Towers")
                 .RequireAuthorization("RequireAdminRole"); // Aplica la directiva de Admin;
 
-            group.MapGet("", async (AssetDbContext context) =>
-                Results.Ok(await context.Towers.AsNoTracking().ToListAsync()));
+            group.MapGet("", async (AssetDbContext context, ITenantService tenantService) =>
+            {
+                var condominiumId = tenantService.GetCondominiumId();
+
+                Results.Ok(await context.Towers
+                                .Where(x => x.CondominiumId == condominiumId)
+                                .AsNoTracking()
+                                .ToListAsync());
+            });
 
             group.MapGet("/{id:guid}", async (Guid id, AssetDbContext context) =>
             {

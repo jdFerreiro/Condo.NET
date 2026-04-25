@@ -18,17 +18,28 @@ namespace CondoNet.Asset.Api.Endpoints
                 .WithTags("CriticalEquipments")
                 .RequireAuthorization("RequireAdminRole");
 
-            group.MapGet("", async (AssetDbContext context) =>
-                Results.Ok(await context.CriticalEquipments.AsNoTracking().ToListAsync()));
-
-            group.MapGet("/{id:guid}", async (Guid id, AssetDbContext context) =>
+            group.MapGet("", async (AssetDbContext context, ITenantService tenantService) =>
             {
-                var entity = await context.CriticalEquipments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+                var condominiumId = tenantService.GetCondominiumId();
+
+                return Results.Ok(await context.CriticalEquipments
+                                            .Where(x => x.CondominiumId == condominiumId)
+                                            .AsNoTracking()
+                                            .ToListAsync());
+            });
+
+            group.MapGet("/{id:guid}", async (Guid id, AssetDbContext context, ITenantService tenantService) =>
+            {
+                var condominiumId = tenantService.GetCondominiumId();
+
+                var entity = await context.CriticalEquipments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.CondominiumId == condominiumId);
                 return entity is not null ? Results.Ok(entity) : Results.NotFound();
             });
 
             group.MapPost("", async (CreateCriticalEquipmentRequest request, AssetDbContext context, IPublishEndpoint publishEndpoint, ITenantService tenantService) =>
             {
+                var organizationId = tenantService.GetOrganizationId();
+
                 var entity = new CriticalEquipment
                 {
                     CondominiumId = request.CondominiumId,
@@ -37,7 +48,8 @@ namespace CondoNet.Asset.Api.Endpoints
                     Model = request.Model,
                     InstallationDate = request.InstallationDate,
                     MaintenanceFrequencyDays = request.MaintenanceFrequencyDays,
-                    ManualUrl = request.ManualUrl
+                    ManualUrl = request.ManualUrl,
+                    OrganizationId = organizationId
                 };
 
                 context.CriticalEquipments.Add(entity);

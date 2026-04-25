@@ -63,6 +63,7 @@ try
 
     builder.Services.AddScoped<ITenantService, TenantService>();
     builder.Services.AddScoped<IAssetService, AssetService>();
+    builder.Services.AddScoped<IUnitService, UnitService>();
 
     // 4. OpenAPI / Swagger
     builder.Services.AddOpenApi();
@@ -136,14 +137,19 @@ try
         };
     });
 
-    builder.Services.AddAuthorization(options =>
-    {
-        options.AddPolicy("RequireAdminRole", policy =>
-            policy.RequireRole("Admin")); // O el nombre de rol que uses
-        options.AddPolicy("RequireAssetRole", p => p.RequireRole("Admin", "AssetManager"));
-    });
+    builder.Services.AddAuthorizationBuilder()
+        .AddPolicy("RequireAdminRole", policy =>
+            policy.RequireRole("ADMIN"))
+        .AddPolicy("RequireAssetRole", p => p.RequireRole("ADMIN", "AssetManager"))
+        .AddPolicy("RequiredAnyRole", p => p.RequireRole("ADMIN", "Manager", "User"));
 
-    builder.Services.AddHttpClient();
+    builder.Services.AddHttpClient("AuthService")
+        .ConfigurePrimaryHttpMessageHandler(() =>
+        {
+            var handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            return handler;
+        });
 
     var app = builder.Build();
 

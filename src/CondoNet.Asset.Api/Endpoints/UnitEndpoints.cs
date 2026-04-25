@@ -42,8 +42,15 @@ namespace CondoNet.Asset.Api.Endpoints
             })
             .WithName("BulkImportUnits");
 
-            group.MapGet("", async (AssetDbContext context) =>
-                Results.Ok(await context.Units.AsNoTracking().ToListAsync()));
+            group.MapGet("", async (AssetDbContext context, ITenantService tenantService) =>
+            {
+                var condominiumId = tenantService.GetCondominiumId();
+                Results.Ok(await context.Units
+                                    .Include(x => x.Tower)
+                                    .Where(x => x.Tower.CondominiumId == condominiumId)
+                                    .AsNoTracking()
+                                    .ToListAsync());
+            });
 
             group.MapGet("/{id:guid}", async (Guid id, AssetDbContext context) =>
             {

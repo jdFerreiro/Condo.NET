@@ -4,6 +4,11 @@ using Microsoft.Extensions.Configuration;
 
 namespace CondoNet.Shared.Middleware
 {
+    public static class ApiKeyMiddlewareExtensions
+    {
+        public static IApplicationBuilder UseApiKeyMiddleware(this IApplicationBuilder builder)
+            => builder.UseMiddleware<ApiKeyMiddleware>();
+    }
     public class ApiKeyMiddleware(RequestDelegate next, IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
         private readonly RequestDelegate _next = next;
@@ -12,38 +17,41 @@ namespace CondoNet.Shared.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            if (!context.Request.Headers.TryGetValue("X-Api-Key", out var extractedApiKey) || string.IsNullOrEmpty(extractedApiKey))
+            try
             {
-                context.Response.StatusCode = 401;
-                await context.Response.WriteAsync("ApiKey faltante.");
-                return;
-            }
+                if (!context.Request.Headers.TryGetValue("X-Api-Key", out var extractedApiKey) || string.IsNullOrEmpty(extractedApiKey))
+                {
+                    context.Response.StatusCode = 401;
+                    await context.Response.WriteAsync("ApiKey faltante.");
+                    return;
+                }
 
-            if (context.Request.Path.Value.Contains("apikeys/validate"))
+                if (context.Request.Path.Value.Contains("apikeys/validate"))
+                {
+                    context.Response.StatusCode = 200;
+                    return;
+                }
+
+                var client = _httpClientFactory.CreateClient("AuthService");
+                client.DefaultRequestHeaders.Clear();
+                client.DefaultRequestHeaders.Add("x-api-key", [.. extractedApiKey]);
+                string url = $"{_authServiceUrl}/api/auth/apikeys/validate?key={extractedApiKey}";
+                var response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    context.Response.StatusCode = 401;
+                    await context.Response.WriteAsync("ApiKey inválida.");
+                    return;
+                }
+
+                await _next(context);
+            }
+            catch (Exception ex)
             {
-                context.Response.StatusCode = 200;
-                return;
+                context.Response.StatusCode = 500;
+                await context.Response.WriteAsync($"Error interno: {ex.Message} /n Internal: {ex.InnerException.Message} /n StackTrace: {ex.StackTrace}");
             }
-
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Clear();
-            client.DefaultRequestHeaders.Add("x-api-key", [.. extractedApiKey]);
-            var response = await client.GetAsync($"{_authServiceUrl}/api/auth/apikeys/validate?key={extractedApiKey}");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                context.Response.StatusCode = 401;
-                await context.Response.WriteAsync("ApiKey inválida.");
-                return;
-            }
-
-            await _next(context);
         }
-    }
-
-    public static class ApiKeyMiddlewareExtensions
-    {
-        public static IApplicationBuilder UseApiKeyMiddleware(this IApplicationBuilder builder)
-            => builder.UseMiddleware<ApiKeyMiddleware>();
     }
 }

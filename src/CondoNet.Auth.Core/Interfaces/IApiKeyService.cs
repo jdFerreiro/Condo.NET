@@ -7,5 +7,6 @@ namespace CondoNet.Auth.Core.Interfaces
         Task<Result<ApiKeyResponse>> CreateApiKeyAsync(Guid orgId, string description);
         Task<Result<List<ApiKeyResponse>>> GetApiKeysByOrgAsync(Guid orgId);
         Task<Result<bool>> RevokeApiKeyAsync(Guid orgId, Guid apiKeyId);
+        Task<Result<bool>> ValidateApiKeyAsync(string apiKeyId);
     }
 }

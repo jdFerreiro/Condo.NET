@@ -133,8 +133,19 @@ builder.Services.AddAuthentication(x =>
     };
 });
 
-builder.Services.AddAuthorization();
-builder.Services.AddHttpClient(); // Para que ApiKeyMiddleware pueda hacer llamadas HTTP
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("RequiredAdmin", policy =>
+        policy.RequireRole("ADMIN"))
+    .AddPolicy("RequiredAnyRole", policy =>
+        policy.RequireRole("ADMIN", "Manager", "User"));
+
+builder.Services.AddHttpClient("AuthService")
+    .ConfigurePrimaryHttpMessageHandler(() =>
+    {
+        var handler = new HttpClientHandler();
+        handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+        return handler;
+    });
 
 var app = builder.Build();
 
@@ -149,40 +160,25 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Dentro de Program.cs antes de app.Run()
+// Middleware de logging para depuración
 app.Use(async (context, next) =>
 {
-    var condoId = context.User.FindFirst("condo_id")?.Value ?? "N/A";
-    var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Anonymous";
-    if (!context.Request.Headers.TryGetValue("X-Correlation-ID", out var correlationId))
-    {
-        correlationId = Guid.NewGuid().ToString();
-    }
-
-    using (Serilog.Context.LogContext.PushProperty("CondoId", condoId))
-    using (Serilog.Context.LogContext.PushProperty("UserId", userId))
-    using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
-    {
-        // 3. Añadirlo a la respuesta para que el cliente pueda reportarlo en caso de error
-        context.Response.Headers.Append("X-Correlation-ID", correlationId);
-
-        await next();
-    }
+    Console.WriteLine($"Petición recibida: {context.Request.Method} {context.Request.Path}");
+    await next();
 });
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// El middleware de ApiKey debe ir después de Auth si depende de claims, 
-// o antes si es independiente. Aquí lo dejamos antes del ruteo.
-app.UseMiddleware<ApiKeyMiddleware>();
+// Middleware de ApiKey (si lo necesitas en Auth, aunque normalmente solo en Asset)
+// app.UseMiddleware<ApiKeyMiddleware>();
 
-// 8. Mapeo de Endpoints (Minimal APIs)
+// 8. Mapeo de Endpoints (Minimal APIs) - SIEMPRE al final
 app.MapAuthEndpoints();
 app.MapApiKeyEndpoints();
 app.MapPasswordEndpoints();
 app.MapUserEndpoints();
-app.MapContextEndpoints(); // ¡No olvides este!
+app.MapContextEndpoints();
 
 app.Run();

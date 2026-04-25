@@ -15,18 +15,31 @@ namespace CondoNet.Asset.Api.Endpoints
         public static void MapCondominiumEndpoints(this IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/api/assets/condominiums")
-                .WithTags("Condominiums")
-                .RequireAuthorization("RequireAdminRole"); // Aplica la directiva de Admin
+                .WithTags("Condominiums"); // Aplica la directiva de Admin
 
 
-            group.MapGet("", async (AssetDbContext context) =>
-                Results.Ok(await context.Condominiums.AsNoTracking().ToListAsync()));
-
-            group.MapGet("/{id:guid}", async (Guid id, AssetDbContext context) =>
+            group.MapGet("", async (AssetDbContext context, ITenantService tenantService) =>
             {
-                var entity = await context.Condominiums.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+                var organizationId = tenantService.GetOrganizationId();
+
+                var data = await context.Condominiums
+                                .Where(c => c.OrganizationId == organizationId)
+                                .AsNoTracking()
+                                .ToListAsync();
+
+                return Results.Ok(data);
+            })
+            .RequireAuthorization("RequiredAnyRole");
+
+            group.MapGet("/{id:guid}", async (Guid id, AssetDbContext context, ITenantService tenantService) =>
+            {
+                var organizationId = tenantService.GetOrganizationId();
+                var entity = await context.Condominiums
+                                        .AsNoTracking()
+                                        .FirstOrDefaultAsync(x => x.Id == id && x.OrganizationId == organizationId);
                 return entity is not null ? Results.Ok(entity) : Results.NotFound();
-            });
+            })
+            .RequireAuthorization("");
 
             group.MapPost("", async (CreateCondominiumRequest request, AssetDbContext context, IPublishEndpoint publishEndpoint, ITenantService tenantService) =>
             {
@@ -52,7 +65,8 @@ namespace CondoNet.Asset.Api.Endpoints
                 ));
 
                 return Results.Created($"/api/assets/condominiums/{entity.Id}", entity);
-            });
+            })
+                .RequireAuthorization("RequireAdminRole");
 
             group.MapPut("/{id:guid}", async (Guid id, UpdateCondominiumRequest request, AssetDbContext context, IPublishEndpoint publishEndpoint, ITenantService tenantService) =>
             {
@@ -72,7 +86,8 @@ namespace CondoNet.Asset.Api.Endpoints
                 ));
 
                 return Results.Ok(entity);
-            });
+            })
+                .RequireAuthorization("RequireAdminRole");
 
             group.MapDelete("/{id:guid}", async (Guid id, AssetDbContext context) =>
             {
@@ -82,7 +97,9 @@ namespace CondoNet.Asset.Api.Endpoints
                 context.Condominiums.Remove(entity);
                 await context.SaveChangesAsync();
                 return Results.NoContent();
-            });
+            })
+            .RequireAuthorization("RequireAdminRole");
+
         }
 
         private sealed record CreateCondominiumRequest(string Name, string Address);

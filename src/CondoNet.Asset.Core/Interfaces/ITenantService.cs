@@ -3,5 +3,6 @@
     public interface ITenantService
     {
         Guid GetOrganizationId();
+        Guid GetCondominiumId();
     }
 }

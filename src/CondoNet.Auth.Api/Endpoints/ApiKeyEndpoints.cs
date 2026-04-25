@@ -1,8 +1,6 @@
 ﻿using CondoNet.Auth.Core.Interfaces;
-using CondoNet.Auth.Infrastructure.Persistence;
 using CondoNet.Shared.Auth.DTOs;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace CondoNet.Auth.Api.Endpoints;
@@ -22,7 +20,7 @@ public static class ApiKeyEndpoints
             var result = await service.CreateApiKeyAsync(orgId, request.Description);
             return Results.Created($"/api/auth/apikeys/{result.Value!.Id}", result.Value);
         })
-        .RequireAuthorization(policy => policy.RequireClaim("role", "ADMIN"));
+        .RequireAuthorization("RequiredAdmin");
 
         group.MapGet("/", async (IApiKeyService service, ClaimsPrincipal user) =>
         {
@@ -39,16 +37,16 @@ public static class ApiKeyEndpoints
 
             return result.IsSuccess ? Results.NoContent() : Results.NotFound(result.Error);
         })
-        .RequireAuthorization(policy => policy.RequireClaim("role", "ADMIN"));
+        .RequireAuthorization("RequiredAdmin");
 
-        group.MapGet("/validate", async ([FromServices] AuthDbContext db, [FromQuery] string key) =>
+        // Endpoint de validación de API Key por query string, acceso anónimo
+        group.MapGet("/validate", async ([FromQuery] string key, IApiKeyService service) =>
         {
             if (string.IsNullOrWhiteSpace(key))
                 return Results.Unauthorized();
 
-            var exists = await db.ApiKeys.AnyAsync(a => a.Key == key && a.IsActive);
-
-            return exists ? Results.Ok() : Results.Unauthorized();
+            var result = await service.ValidateApiKeyAsync(key);
+            return result.IsSuccess ? Results.Ok() : Results.Unauthorized();
         })
         .AllowAnonymous()
         .WithName("ValidateApiKey")

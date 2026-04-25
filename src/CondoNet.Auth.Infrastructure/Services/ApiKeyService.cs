@@ -62,6 +62,14 @@ namespace CondoNet.Auth.Infrastructure.Services
             return Result<bool>.Success(true);
         }
 
+        public async Task<Result<bool>> ValidateApiKeyAsync(string apiKeyId)
+        {
+            var key = await _db.ApiKeys.FirstOrDefaultAsync(k => k.Key == apiKeyId && k.IsActive);
+            if (key == null) return Result<bool>.Failure("API Key no encontrada");
+            return Result<bool>.Success(true);
+        }
+
+
         private static string GenerateSecureKey()
         {
             var bytes = new byte[32];
