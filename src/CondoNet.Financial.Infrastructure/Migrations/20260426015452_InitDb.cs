@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -55,23 +54,6 @@ namespace CondoNet.Financial.Infrastructure.Migrations
                         principalTable: "FinancialSubSections",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Transactions",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    AccountId = table.Column<int>(type: "integer", nullable: false),
-                    Amount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    TransactionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Description = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Transactions", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -232,6 +214,56 @@ namespace CondoNet.Financial.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Transactions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UnitAccountId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PaymentId = table.Column<Guid>(type: "uuid", nullable: true),
+                    InvoiceId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CondoExpenseId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Amount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    TransactionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Description = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
+                    Type = table.Column<string>(type: "text", nullable: false),
+                    BlockchainTxHash = table.Column<string>(type: "text", nullable: true),
+                    MerkleRoot = table.Column<string>(type: "text", nullable: true),
+                    CondominiumId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OrganizationId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Transactions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Transactions_CondoExpenses_CondoExpenseId",
+                        column: x => x.CondoExpenseId,
+                        principalTable: "CondoExpenses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Transactions_Invoices_InvoiceId",
+                        column: x => x.InvoiceId,
+                        principalTable: "Invoices",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Transactions_Payments_PaymentId",
+                        column: x => x.PaymentId,
+                        principalTable: "Payments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Transactions_UnitAccounts_UnitAccountId",
+                        column: x => x.UnitAccountId,
+                        principalTable: "UnitAccounts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_CondoExpenses_FinancialSubSectionId",
                 table: "CondoExpenses",
@@ -269,6 +301,26 @@ namespace CondoNet.Financial.Infrastructure.Migrations
                 column: "InvoiceId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Transactions_CondoExpenseId",
+                table: "Transactions",
+                column: "CondoExpenseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Transactions_InvoiceId",
+                table: "Transactions",
+                column: "InvoiceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Transactions_PaymentId",
+                table: "Transactions",
+                column: "PaymentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Transactions_UnitAccountId",
+                table: "Transactions",
+                column: "UnitAccountId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_UnitAccounts_ExternalUnitId",
                 table: "UnitAccounts",
                 column: "ExternalUnitId");
@@ -286,13 +338,7 @@ namespace CondoNet.Financial.Infrastructure.Migrations
                 name: "BillingConfigurations");
 
             migrationBuilder.DropTable(
-                name: "CondoExpenses");
-
-            migrationBuilder.DropTable(
                 name: "InvoiceItems");
-
-            migrationBuilder.DropTable(
-                name: "Payments");
 
             migrationBuilder.DropTable(
                 name: "Transactions");
@@ -301,10 +347,16 @@ namespace CondoNet.Financial.Infrastructure.Migrations
                 name: "UnitAccountSections");
 
             migrationBuilder.DropTable(
-                name: "Invoices");
+                name: "CondoExpenses");
+
+            migrationBuilder.DropTable(
+                name: "Payments");
 
             migrationBuilder.DropTable(
                 name: "FinancialSubSections");
+
+            migrationBuilder.DropTable(
+                name: "Invoices");
 
             migrationBuilder.DropTable(
                 name: "UnitAccounts");

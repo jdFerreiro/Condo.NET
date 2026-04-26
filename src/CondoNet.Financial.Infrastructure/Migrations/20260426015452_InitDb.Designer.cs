@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CondoNet.Financial.Infrastructure.Migrations
 {
     [DbContext(typeof(FinancialDbContext))]
-    [Migration("20260425180427_InitDb")]
+    [Migration("20260426015452_InitDb")]
     partial class InitDb
     {
         /// <inheritdoc />
@@ -308,31 +308,68 @@ namespace CondoNet.Financial.Infrastructure.Migrations
 
             modelBuilder.Entity("CondoNet.Financial.Core.Entities.Transaction", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AccountId")
-                        .HasColumnType("integer");
+                        .HasColumnType("uuid");
 
                     b.Property<decimal>("Amount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("BlockchainTxHash")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("CondoExpenseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CondominiumId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)");
 
+                    b.Property<Guid?>("InvoiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MerkleRoot")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("PaymentId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("TransactionDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UnitAccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CondoExpenseId");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.HasIndex("PaymentId");
+
+                    b.HasIndex("UnitAccountId");
 
                     b.ToTable("Transactions");
                 });
@@ -453,6 +490,38 @@ namespace CondoNet.Financial.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Invoice");
+                });
+
+            modelBuilder.Entity("CondoNet.Financial.Core.Entities.Transaction", b =>
+                {
+                    b.HasOne("CondoNet.Financial.Core.Entities.CondoExpense", "CondoExpense")
+                        .WithMany()
+                        .HasForeignKey("CondoExpenseId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CondoNet.Financial.Core.Entities.Invoice", "Invoice")
+                        .WithMany()
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CondoNet.Financial.Core.Entities.Payment", "Payment")
+                        .WithMany()
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CondoNet.Financial.Core.Entities.UnitAccount", "UnitAccount")
+                        .WithMany()
+                        .HasForeignKey("UnitAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CondoExpense");
+
+                    b.Navigation("Invoice");
+
+                    b.Navigation("Payment");
+
+                    b.Navigation("UnitAccount");
                 });
 
             modelBuilder.Entity("CondoNet.Financial.Core.Entities.UnitAccountSection", b =>

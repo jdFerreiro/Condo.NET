@@ -78,12 +78,34 @@ namespace CondoNet.Financial.Infrastructure.Persistence
                 .Property(p => p.Method)
                 .HasConversion<string>();
 
-            // Configuración adicional (opcional pero recomendada)
+            // Configuración de Transaction y sus relaciones
             modelBuilder.Entity<Transaction>(entity =>
             {
-
                 entity.Property(t => t.Amount).HasPrecision(18, 2);
                 entity.Property(t => t.Description).HasMaxLength(250);
+
+                entity.HasOne(t => t.UnitAccount)
+                    .WithMany()
+                    .HasForeignKey(t => t.UnitAccountId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(t => t.Payment)
+                    .WithMany()
+                    .HasForeignKey(t => t.PaymentId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(t => t.Invoice)
+                    .WithMany()
+                    .HasForeignKey(t => t.InvoiceId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(t => t.CondoExpense)
+                    .WithMany()
+                    .HasForeignKey(t => t.CondoExpenseId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.Property(t => t.Type)
+                    .HasConversion<string>();
             });
 
         }
