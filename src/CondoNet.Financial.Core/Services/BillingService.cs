@@ -15,6 +15,7 @@ public class BillingService : IBillingService
     private readonly IInvoiceItemRepository _invoiceItemRepo;
     private readonly IMerkleTreeService _merkleTreeService;
     private readonly IBlockchainIntegrationService _blockchainIntegrationService;
+    private readonly IAuditLogRepository _auditLogRepository;
 
     public BillingService(
         ICondoExpenseRepository expenseRepo,
@@ -24,7 +25,8 @@ public class BillingService : IBillingService
         IInvoiceRepository invoiceRepo,
         IInvoiceItemRepository invoiceItemRepo,
         IMerkleTreeService merkleTreeService,
-        IBlockchainIntegrationService blockchainIntegrationService)
+        IBlockchainIntegrationService blockchainIntegrationService,
+        IAuditLogRepository auditLogRepository)
     {
         _expenseRepo = expenseRepo;
         _subSectionRepo = subSectionRepo;
@@ -34,6 +36,7 @@ public class BillingService : IBillingService
         _invoiceItemRepo = invoiceItemRepo;
         _merkleTreeService = merkleTreeService;
         _blockchainIntegrationService = blockchainIntegrationService;
+        _auditLogRepository = auditLogRepository;
     }
 
     public async Task<List<MonthlyBillDto>> GenerateMonthlyBillAsync(DateTime period, CancellationToken cancellationToken = default)
@@ -302,10 +305,17 @@ public class BillingService : IBillingService
         var isAnchored = await _blockchainIntegrationService.ValidateMerkleRootAsync(merkleRoot, period, cancellationToken);
         if (isAnchored)
         {
-            // Aquí puedes disparar una alerta de auditoría (log, evento, etc.)
-            // Por simplicidad, lanzamos excepción
-            // TODO: Implementar registro de auditoría real
-            throw new InvalidOperationException("No se puede modificar un gasto ya anclado en blockchain. Se ha disparado una alerta de auditoría.");
+            // Auditoría real: registrar el intento
+            await _auditLogRepository.AddAsync(new Entities.AuditLog
+            {
+                Action = "Intento de modificación de gasto anclado",
+                EntityName = nameof(Entities.CondoExpense),
+                EntityId = expenseId.ToString(),
+                UserName = "system", // Reemplazar por usuario real si está disponible
+                Details = $"Intento de modificar gasto anclado en blockchain. Descripción nueva: {updatedExpense.Description}, Monto nuevo: {updatedExpense.Amount}",
+                Timestamp = DateTime.UtcNow
+            }, cancellationToken);
+            throw new InvalidOperationException("No se puede modificar un gasto ya anclado en blockchain. Se ha registrado una alerta de auditoría.");
         }
 
         // Actualiza el gasto

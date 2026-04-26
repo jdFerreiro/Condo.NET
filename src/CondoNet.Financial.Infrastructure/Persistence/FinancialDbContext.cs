@@ -22,6 +22,7 @@ namespace CondoNet.Financial.Infrastructure.Persistence
         public DbSet<Payment> Payments => Set<Payment>();
         public DbSet<BillingConfiguration> BillingConfigurations => Set<BillingConfiguration>();
         public DbSet<Transaction> Transactions => Set<Transaction>();
+        public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
