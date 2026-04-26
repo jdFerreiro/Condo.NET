@@ -7,5 +7,6 @@ namespace CondoNet.Financial.Core.Interfaces
         Task RegisterPaymentAsync(RegisterPaymentDto payment, CancellationToken cancellationToken = default);
         Task<AccountStatusDto> GetAccountStatusAsync(string unitId, CancellationToken cancellationToken = default);
         Task SplitFundsAsync(RegisterPaymentDto payment, CancellationToken cancellationToken = default);
+        Task CertifyPaymentAsync(Guid paymentId, CancellationToken cancellationToken = default);
     }
 }

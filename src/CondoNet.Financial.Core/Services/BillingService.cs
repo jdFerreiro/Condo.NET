@@ -5,46 +5,33 @@ namespace CondoNet.Financial.Core.Services;
 
 
 
-public class BillingService : IBillingService
+public class BillingService(
+    ICondoExpenseRepository expenseRepo,
+    IFinancialSubSectionRepository subSectionRepo,
+    IUnitAccountSectionRepository unitAccountSectionRepo,
+    IUnitAccountRepository unitAccountRepo,
+    IInvoiceRepository invoiceRepo,
+    IInvoiceItemRepository invoiceItemRepo,
+    IMerkleTreeService merkleTreeService,
+    IBlockchainIntegrationService blockchainIntegrationService,
+    IAuditLogRepository auditLogRepository) : IBillingService
 {
-    private readonly ICondoExpenseRepository _expenseRepo;
-    private readonly IFinancialSubSectionRepository _subSectionRepo;
-    private readonly IUnitAccountSectionRepository _unitAccountSectionRepo;
-    private readonly IUnitAccountRepository _unitAccountRepo;
-    private readonly IInvoiceRepository _invoiceRepo;
-    private readonly IInvoiceItemRepository _invoiceItemRepo;
-    private readonly IMerkleTreeService _merkleTreeService;
-    private readonly IBlockchainIntegrationService _blockchainIntegrationService;
-    private readonly IAuditLogRepository _auditLogRepository;
-
-    public BillingService(
-        ICondoExpenseRepository expenseRepo,
-        IFinancialSubSectionRepository subSectionRepo,
-        IUnitAccountSectionRepository unitAccountSectionRepo,
-        IUnitAccountRepository unitAccountRepo,
-        IInvoiceRepository invoiceRepo,
-        IInvoiceItemRepository invoiceItemRepo,
-        IMerkleTreeService merkleTreeService,
-        IBlockchainIntegrationService blockchainIntegrationService,
-        IAuditLogRepository auditLogRepository)
-    {
-        _expenseRepo = expenseRepo;
-        _subSectionRepo = subSectionRepo;
-        _unitAccountSectionRepo = unitAccountSectionRepo;
-        _unitAccountRepo = unitAccountRepo;
-        _invoiceRepo = invoiceRepo;
-        _invoiceItemRepo = invoiceItemRepo;
-        _merkleTreeService = merkleTreeService;
-        _blockchainIntegrationService = blockchainIntegrationService;
-        _auditLogRepository = auditLogRepository;
-    }
+    private readonly ICondoExpenseRepository _expenseRepo = expenseRepo;
+    private readonly IFinancialSubSectionRepository _subSectionRepo = subSectionRepo;
+    private readonly IUnitAccountSectionRepository _unitAccountSectionRepo = unitAccountSectionRepo;
+    private readonly IUnitAccountRepository _unitAccountRepo = unitAccountRepo;
+    private readonly IInvoiceRepository _invoiceRepo = invoiceRepo;
+    private readonly IInvoiceItemRepository _invoiceItemRepo = invoiceItemRepo;
+    private readonly IMerkleTreeService _merkleTreeService = merkleTreeService;
+    private readonly IBlockchainIntegrationService _blockchainIntegrationService = blockchainIntegrationService;
+    private readonly IAuditLogRepository _auditLogRepository = auditLogRepository;
 
     public async Task<List<MonthlyBillDto>> GenerateMonthlyBillAsync(DateTime period, CancellationToken cancellationToken = default)
     {
         // 1. Obtener todos los gastos del mes
         var expenses = await _expenseRepo.GetByPeriodAsync(period.Month, period.Year, cancellationToken);
         var expensesList = expenses.ToList();
-        if (!expensesList.Any())
+        if (expensesList.Count == 0)
             throw new InvalidOperationException("No hay gastos registrados para el periodo");
 
         // 2. Obtener todas las subsecciones involucradas
@@ -81,7 +68,7 @@ public class BillingService : IBillingService
                 UnitAccountId = unit.Id.ToString(),
                 OwnerName = unit.OwnerName,
                 TotalAmount = 0m,
-                Items = new List<MonthlyBillItemDto>()
+                Items = []
             };
 
             // Buscar todas las asignaciones de la unidad
@@ -132,7 +119,7 @@ public class BillingService : IBillingService
                     DueDate = new DateTime(period.Year, period.Month, DateTime.DaysInMonth(period.Year, period.Month)),
                     Status = Entities.InvoiceStatus.Pending,
                     TotalAmount = totalAmount,
-                    Number = $"{period:yyyyMM}-{unit.Id.ToString().Substring(0, 8)}",
+                    Number = $"{period:yyyyMM}-{unit.Id.ToString()[..8]}",
                     FechaEmision = DateTime.UtcNow,
                     IsEmitted = true
                 };
@@ -178,9 +165,7 @@ public class BillingService : IBillingService
         if (!Guid.TryParse(expense.SubSection, out var subSectionId))
             throw new ArgumentException("SubSection debe ser un GUID válido");
 
-        var subSection = await _subSectionRepo.GetByIdAsync(subSectionId, cancellationToken);
-        if (subSection == null)
-            throw new InvalidOperationException("La subsección financiera no existe");
+        var subSection = await _subSectionRepo.GetByIdAsync(subSectionId, cancellationToken) ?? throw new InvalidOperationException("La subsección financiera no existe");
 
         // 2. Crear el gasto
         var condoExpense = new Entities.CondoExpense
@@ -199,7 +184,7 @@ public class BillingService : IBillingService
 
         // 3. Obtener unidades vinculadas a la subsección
         var assignments = (await _unitAccountSectionRepo.GetByFinancialSubSectionIdAsync(subSectionId, cancellationToken)).ToList();
-        if (!assignments.Any())
+        if (assignments.Count == 0)
             throw new InvalidOperationException("No hay unidades vinculadas a la subsección para prorratear el gasto");
 
         // 4. Calcular el monto prorrateado para cada unidad
@@ -229,7 +214,7 @@ public class BillingService : IBillingService
                     DueDate = new DateTime(expense.Date.Year, expense.Date.Month, DateTime.DaysInMonth(expense.Date.Year, expense.Date.Month)),
                     Status = Entities.InvoiceStatus.Pending,
                     TotalAmount = 0m,
-                    Number = $"{expense.Date:yyyyMM}-{unit.UnitAccountId.ToString().Substring(0, 8)}"
+                    Number = $"{expense.Date:yyyyMM}-{unit.UnitAccountId.ToString()[..8]}"
                 };
                 await _invoiceRepo.AddAsync(invoice, cancellationToken);
             }
@@ -286,9 +271,7 @@ public class BillingService : IBillingService
     /// </summary>
     public async Task UpdateExpenseAsync(Guid expenseId, ExpenseDto updatedExpense, CancellationToken cancellationToken = default)
     {
-        var expense = await _expenseRepo.GetByIdAsync(expenseId, cancellationToken);
-        if (expense == null)
-            throw new InvalidOperationException("El gasto no existe.");
+        var expense = await _expenseRepo.GetByIdAsync(expenseId, cancellationToken) ?? throw new InvalidOperationException("El gasto no existe.");
 
         // Verifica si el Merkle Root del periodo está anclado
         var period = new DateTime(expense.Year, expense.Month, 1);

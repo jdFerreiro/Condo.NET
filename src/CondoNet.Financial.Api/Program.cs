@@ -1,4 +1,8 @@
+using CondoNet.Financial.Core.Interfaces;
+using CondoNet.Financial.Core.Services;
+using CondoNet.Financial.Infrastructure.Blockchain;
 using CondoNet.Financial.Infrastructure.Persistence;
+using CondoNet.Financial.Infrastructure.Repositories;
 using CondoNet.Shared.Interfaces;
 using CondoNet.Shared.Middleware;
 using CondoNet.Shared.Services;
@@ -151,8 +155,22 @@ try
         });
 
     // 8. Inyección de Dependencias para Servicios y Repositorios
-    //builder.Services.AddScoped<IFinancialService, FinancialService>();
-    //builder.Services.AddScoped<IFinancialRepository, FinancialRepository>();
+    builder.Services.AddScoped<IBillingService, BillingService>();
+    builder.Services.AddScoped<IFinancialService, FinancialService>();
+    builder.Services.AddScoped<IMerkleTreeService, MerkleTreeService>();
+    builder.Services.AddScoped<IBlockchainIntegrationService, BlockchainIntegrationService>();
+    builder.Services.AddScoped<IGlobalFundRepository, GlobalFundRepository>();
+    builder.Services.AddScoped<IUnitAccountRepository, UnitAccountRepository>();
+    builder.Services.AddScoped<ICondoExpenseRepository, CondoExpenseRepository>();
+    builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+    builder.Services.AddScoped<IFinancialSubSectionRepository, FinancialSubSectionRepository>();
+    builder.Services.AddScoped<IInvoiceItemRepository, InvoiceItemRepository>();
+    builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+    builder.Services.AddScoped<IBillingConfigurationRepository, BillingConfigurationRepository>();
+    builder.Services.AddScoped<IFinancialCondominiumConfigurationRepository, FinancialCondominiumConfigurationRepository>();
+    builder.Services.AddScoped<IUnitAccountSectionRepository, UnitAccountSectionRepository>();
+    builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+    builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
     var app = builder.Build();
 

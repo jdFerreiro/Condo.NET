@@ -38,7 +38,10 @@ namespace CondoNet.Financial.Infrastructure.Blockchain
         public async Task<string> GetBlockNumberAsync(CancellationToken cancellationToken = default)
         {
             var blockNumber = await _web3.Eth.Blocks.GetBlockNumber.SendRequestAsync(cancellationToken);
-            _logger.LogInformation($"Block number: {blockNumber.Value}");
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Current block number: {blockNumber}", blockNumber.Value);
+            }
             return blockNumber.Value.ToString();
         }
     }

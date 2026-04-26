@@ -3,13 +3,9 @@ using CondoNet.Financial.Core.Interfaces;
 
 namespace CondoNet.Financial.Infrastructure.Repositories;
 
-public class AuditLogRepository : IAuditLogRepository
+public class AuditLogRepository(Persistence.FinancialDbContext context) : IAuditLogRepository
 {
-    private readonly Persistence.FinancialDbContext _context;
-    public AuditLogRepository(Persistence.FinancialDbContext context)
-    {
-        _context = context;
-    }
+    private readonly Persistence.FinancialDbContext _context = context;
 
     public async Task AddAsync(AuditLog log, CancellationToken cancellationToken = default)
     {

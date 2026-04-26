@@ -1,20 +1,14 @@
-using CondoNet.Financial.Core.Services;
+using CondoNet.Financial.Core.Interfaces;
 using CondoNet.Financial.Infrastructure.CondoNet;
 using CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition;
 using CondoNet.Shared.DTOs.Financial;
 
 namespace CondoNet.Financial.Infrastructure.Blockchain;
 
-public class BlockchainIntegrationService : IBlockchainIntegrationService
+public class BlockchainIntegrationService(IBlockchainService blockchainService, BlockchainSettings settings) : IBlockchainIntegrationService
 {
-    private readonly IBlockchainService _blockchainService;
-    private readonly BlockchainSettings _settings;
-
-    public BlockchainIntegrationService(IBlockchainService blockchainService, BlockchainSettings settings)
-    {
-        _blockchainService = blockchainService;
-        _settings = settings;
-    }
+    private readonly IBlockchainService _blockchainService = blockchainService;
+    private readonly BlockchainSettings _settings = settings;
 
     // Guarda un mensaje en la blockchain (simula registrar un pago)
     public async Task<BlockchainResponseDto> RegisterPaymentOnChainAsync(RegisterPaymentDto payment, CancellationToken cancellationToken = default)
