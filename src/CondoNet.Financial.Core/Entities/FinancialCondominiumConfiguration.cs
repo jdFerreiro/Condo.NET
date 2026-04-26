@@ -7,6 +7,7 @@ public class FinancialCondominiumConfiguration : BaseEntity
     public BlockType BlockType { get; set; } = BlockType.Access; // Ej: Access, Services, Voting
     public decimal ReserveFundPercentage { get; set; }
     public decimal LateFeeInterest { get; set; }
+    public bool EnableCurrencyDifferential { get; set; } = false;
     // Otros parámetros financieros configurables...
 }
 

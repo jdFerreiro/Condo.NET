@@ -5,28 +5,51 @@ using CondoNet.Shared.DTOs.Financial;
 namespace CondoNet.Financial.Core.Services;
 
 
-public class FinancialService(IPaymentRepository paymentRepo, IInvoiceRepository invoiceRepo, IUnitAccountRepository unitAccountRepo,
-    IBillingConfigurationRepository billingConfigRepo, ITransactionRepository transactionRepo,
-    IFinancialCondominiumConfigurationRepository financialCondominiumConfigurationRepository,
-    IBlockchainIntegrationService blockchainIntegrationService, IAuditLogRepository auditLogRepository,
-    IGlobalFundRepository globalFundRepository) : IFinancialService
+public class FinancialService : IFinancialService
 {
-    private readonly IPaymentRepository _paymentRepo = paymentRepo;
-    private readonly IInvoiceRepository _invoiceRepo = invoiceRepo;
-    private readonly IUnitAccountRepository _unitAccountRepo = unitAccountRepo;
-    private readonly IBillingConfigurationRepository _billingConfigRepo = billingConfigRepo;
-    private readonly IAuditLogRepository _auditLogRepository = auditLogRepository;
-    private readonly ITransactionRepository _transactionRepo = transactionRepo;
-    private readonly IBlockchainIntegrationService _blockchainIntegrationService = blockchainIntegrationService;
-    private readonly IGlobalFundRepository _globalFundRepository = globalFundRepository;
-    private readonly IFinancialCondominiumConfigurationRepository _financialConfigRepo = financialCondominiumConfigurationRepository;
+    private readonly ICurrencyService _currencyService;
+    private readonly IPaymentRepository _paymentRepo;
+    private readonly IInvoiceRepository _invoiceRepo;
+    private readonly IUnitAccountRepository _unitAccountRepo;
+    private readonly IBillingConfigurationRepository _billingConfigRepo;
+    private readonly IAuditLogRepository _auditLogRepository;
+    private readonly ITransactionRepository _transactionRepo;
+    private readonly IBlockchainIntegrationService _blockchainIntegrationService;
+    private readonly IGlobalFundRepository _globalFundRepository;
+    private readonly IFinancialCondominiumConfigurationRepository _financialConfigRepo;
+    private readonly ICurrencyAdjustmentLogRepository _currencyAdjustmentLogRepository;
+
+    public FinancialService(
+        IPaymentRepository paymentRepo,
+        IInvoiceRepository invoiceRepo,
+        IUnitAccountRepository unitAccountRepo,
+        IBillingConfigurationRepository billingConfigRepo,
+        ITransactionRepository transactionRepo,
+        IFinancialCondominiumConfigurationRepository financialCondominiumConfigurationRepository,
+        IBlockchainIntegrationService blockchainIntegrationService,
+        IAuditLogRepository auditLogRepository,
+        IGlobalFundRepository globalFundRepository,
+        ICurrencyService currencyService,
+        ICurrencyAdjustmentLogRepository currencyAdjustmentLogRepository)
+    {
+        _currencyService = currencyService;
+        _paymentRepo = paymentRepo;
+        _invoiceRepo = invoiceRepo;
+        _unitAccountRepo = unitAccountRepo;
+        _billingConfigRepo = billingConfigRepo;
+        _auditLogRepository = auditLogRepository;
+        _transactionRepo = transactionRepo;
+        _blockchainIntegrationService = blockchainIntegrationService;
+        _globalFundRepository = globalFundRepository;
+        _financialConfigRepo = financialCondominiumConfigurationRepository;
+        _currencyAdjustmentLogRepository = currencyAdjustmentLogRepository;
+    }
 
     public async Task RegisterPaymentAsync(RegisterPaymentDto payment, CancellationToken cancellationToken = default)
     {
         // 1. Validar monto
         if (payment.Amount <= 0)
             throw new InvalidOperationException("El monto del pago debe ser mayor que cero.");
-
 
         // 2. Buscar la unidad
         var unit = await _unitAccountRepo.GetByExternalUnitIdAsync(payment.UnitId, cancellationToken) ?? throw new InvalidOperationException("La unidad no existe.");
@@ -52,19 +75,65 @@ public class FinancialService(IPaymentRepository paymentRepo, IInvoiceRepository
         if (config.BlockOnDebt && unit.CurrentDebt > config.DebtLimit)
             throw new InvalidOperationException($"La unidad supera el límite de deuda permitido ({config.DebtLimit}). Acceso o servicios pueden estar bloqueados.");
 
-        // 7. Registrar el pago (pendiente de certificación)
+        // 7. Validar y aplicar diferencial cambiario si está habilitado
+        decimal montoARegistrar = payment.Amount;
+        decimal fundImpact = 0;
+        decimal remainingDebtUSD = 0;
+        if (config.EnableCurrencyDifferential)
+        {
+            // Suponiendo que payment.Amount es en VES y tienes payment.AmountUSD en el DTO
+            var validation = await ValidatePaymentWithCurrencyDiffAsync(payment.UnitId, payment.AmountUSD, payment.Amount, cancellationToken);
+            montoARegistrar = payment.Amount; // Se puede ajustar según la lógica de negocio
+            fundImpact = validation.FundImpact;
+            remainingDebtUSD = validation.RemainingDebtUSD;
+
+            if (validation.AdjustmentRequired || fundImpact != 0)
+            {
+                // Registrar ajuste en CurrencyAdjustmentLog
+                // Suponiendo que tienes acceso a _currencyAdjustmentLogRepository
+                await _currencyAdjustmentLogRepository.AddAsync(new CurrencyAdjustmentLog
+                {
+                    OrganizationId = unit.OrganizationId,
+                    EntityType = EntityType.Unit,
+                    EntityId = unit.Id,
+                    ReferenceInvoiceId = invoice.Id,
+                    PreviousRate = 0, // Puedes obtener la tasa anterior si la tienes
+                    NewRate = 0, // Puedes obtener la tasa actual si la tienes
+                    AmountVesDiff = fundImpact,
+                    Reason = CurrencyAdjustmentReason "PAYMENT_DIFFERENTIAL",
+                    CreatedAt = DateTime.UtcNow
+                }, cancellationToken);
+
+                // Actualizar fondo de diferencial
+                var fund = await _globalFundRepository.GetByTypeAsync(GlobalFundType.Differential, cancellationToken);
+                if (fund != null)
+                {
+                    fund.Balance += fundImpact;
+                    await _globalFundRepository.UpdateAsync(fund, cancellationToken);
+                }
+
+                // Actualizar saldo deudor si corresponde
+                if (remainingDebtUSD > 0)
+                {
+                    unit.CurrentDebt += remainingDebtUSD;
+                    await _unitAccountRepo.UpdateAsync(unit, cancellationToken);
+                }
+            }
+        }
+
+        // 8. Registrar el pago (pendiente de certificación)
         var paymentEntity = new Payment
         {
             InvoiceId = invoice.Id,
             Invoice = invoice,
-            Amount = payment.Amount,
+            Amount = montoARegistrar,
             Method = Enum.TryParse<PaymentMethod>(payment.PaymentMethod, out var method) ? method : PaymentMethod.Transfer,
             TransactionReference = payment.TransactionReference,
             IsConfirmedOnChain = false
         };
         await _paymentRepo.AddAsync(paymentEntity, cancellationToken);
 
-        // 8. Registrar la transacción de pago en blockchain
+        // 9. Registrar la transacción de pago en blockchain
         var blockchainResult = await _blockchainIntegrationService.RegisterPaymentOnChainAsync(payment, cancellationToken);
         if (!blockchainResult.Success)
         {
@@ -248,5 +317,43 @@ public class FinancialService(IPaymentRepository paymentRepo, IInvoiceRepository
             Details = $"Pago certificado y saldos actualizados. Monto: {payment.Amount}, Unidad: {unit.ExternalUnitId}",
             Timestamp = DateTime.UtcNow
         }, cancellationToken);
+    }
+    public async Task<PaymentValidationResult> ValidatePaymentWithCurrencyDiffAsync(
+        string unitId, decimal amountUSD, decimal amountVES, CancellationToken cancellationToken = default)
+    {
+        var unit = await _unitAccountRepo.GetByExternalUnitIdAsync(unitId, cancellationToken)
+            ?? throw new InvalidOperationException("La unidad no existe.");
+
+        var config = await _financialConfigRepo.GetByCondominiumIdAsync(unit.CondominiumId, cancellationToken)
+            ?? throw new InvalidOperationException("No hay configuración financiera para el condominio.");
+
+        var rate = await _currencyService.GetActiveRateAsync("VES", unit.OrganizationId, unit.CondominiumId, cancellationToken);
+        if (rate == null)
+            throw new InvalidOperationException("No hay tasa de cambio activa para VES.");
+
+        decimal expectedVES = amountUSD * rate.Rate;
+        decimal tolerance = expectedVES * 0.005m;
+
+        if (amountVES >= (expectedVES - tolerance))
+        {
+            return new PaymentValidationResult
+            {
+                Status = "CONFIRMED",
+                AdjustmentRequired = false,
+                FundImpact = amountVES - expectedVES,
+                RemainingDebtUSD = 0
+            };
+        }
+        else
+        {
+            return new PaymentValidationResult
+            {
+                Status = "PARTIAL_CONFIRMED",
+                AdjustmentRequired = true,
+                FundImpact = 0,
+                RemainingDebtUSD = (expectedVES - amountVES) / rate.Rate,
+                Message = "El monto transferido no cubre la totalidad debido al cambio de tasa."
+            };
+        }
     }
 }
