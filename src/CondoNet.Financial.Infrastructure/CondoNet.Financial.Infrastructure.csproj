@@ -8,20 +8,28 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CondoNet.Financial.Core\CondoNet.Financial.Core.csproj" />
-    <ProjectReference Include="..\CondoNet.Shared\CondoNet.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.7" />
+	<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.7">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Nethereum.Autogen.ContractApi" Version="6.0.0" />
+    <PackageReference Include="Nethereum.Hex" Version="6.1.0" />
+    <PackageReference Include="Nethereum.RPC" Version="6.1.0" />
+    <PackageReference Include="Nethereum.Web3" Version="6.1.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Repositories\" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<NethereumContract Include="Blockchain/Contracts/Mensaje.abi" ContractName="Mensaje" Namespace="CondoNet.Financial.Infrastructure.Blockchain.Contracts" />
   </ItemGroup>
 
 </Project>
