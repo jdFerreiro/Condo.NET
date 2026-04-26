@@ -153,8 +153,35 @@ public class BillingService(
 
         var merkleRoot = await _merkleTreeService.GenerateMerkleRootAsync(expenseDtos, cancellationToken);
 
+        // Validar Merkle Root en blockchain y auditar inconsistencias
+        var isValid = await _blockchainIntegrationService.ValidateMerkleRootAsync(merkleRoot, period, cancellationToken);
+        if (!isValid)
+        {
+            await _auditLogRepository.AddAsync(new Entities.AuditLog
+            {
+                Action = "Inconsistencia Merkle Root",
+                EntityName = "Factura/Gasto",
+                EntityId = period.ToString("yyyy-MM"),
+                UserName = "system",
+                Details = $"Diferencia entre Merkle Root en DB ({merkleRoot}) y Blockchain.",
+                Timestamp = DateTime.UtcNow
+            }, cancellationToken);
+        }
+
         // 7. Anclar el Merkle Root en blockchain
-        await _blockchainIntegrationService.AnchorMerkleRootAsync(merkleRoot, period, cancellationToken);
+        var anchorResult = await _blockchainIntegrationService.AnchorMerkleRootAsync(merkleRoot, period, cancellationToken);
+        if (!anchorResult.Success)
+        {
+            await _auditLogRepository.AddAsync(new Entities.AuditLog
+            {
+                Action = "Error al anclar Merkle Root en blockchain",
+                EntityName = "Factura/Gasto",
+                EntityId = period.ToString("yyyy-MM"),
+                UserName = "system",
+                Details = $"Error: {anchorResult.ErrorMessage}",
+                Timestamp = DateTime.UtcNow
+            }, cancellationToken);
+        }
 
         return bills;
     }

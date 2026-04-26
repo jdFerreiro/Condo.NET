@@ -15,6 +15,10 @@
         public virtual CondoExpense? CondoExpense { get; set; }
 
         public decimal Amount { get; set; }
+
+        // Campos para splits multicomponente
+        public decimal? MontoOperativo { get; set; }
+        public decimal? MontoReserva { get; set; }
         public DateTime TransactionDate { get; set; }
         public string Description { get; set; } = string.Empty;
         public TransactionType Type { get; set; }

@@ -95,7 +95,25 @@ public class FinancialService(IPaymentRepository paymentRepo, IInvoiceRepository
         string merkleRoot = lastInvoice?.MerkleRoot ?? string.Empty;
         DateTime lastUpdate = lastInvoice?.DueDate ?? DateTime.MinValue;
 
-        // 4. Mapear a DTO
+        // 4. Validar Merkle Root en blockchain y auditar inconsistencias
+        if (!string.IsNullOrEmpty(merkleRoot) && lastInvoice != null)
+        {
+            var isValid = await _blockchainIntegrationService.ValidateMerkleRootAsync(merkleRoot, lastInvoice.DueDate, cancellationToken);
+            if (!isValid)
+            {
+                await _auditLogRepository.AddAsync(new AuditLog
+                {
+                    Action = "Inconsistencia Merkle Root",
+                    EntityName = nameof(Invoice),
+                    EntityId = lastInvoice.Id.ToString(),
+                    UserName = "system",
+                    Details = $"Diferencia entre Merkle Root en DB ({merkleRoot}) y Blockchain.",
+                    Timestamp = DateTime.UtcNow
+                }, cancellationToken);
+            }
+        }
+
+        // 5. Mapear a DTO
         return new AccountStatusDto
         {
             UnitId = unit.ExternalUnitId,
@@ -121,6 +139,7 @@ public class FinancialService(IPaymentRepository paymentRepo, IInvoiceRepository
         var montoReserva = Math.Round(payment.Amount * reservePct, 2);
         var montoOperativo = payment.Amount - montoReserva;
 
+
         // 4. Registrar transacciones
         await _transactionRepo.AddAsync(new Transaction
         {
@@ -139,6 +158,22 @@ public class FinancialService(IPaymentRepository paymentRepo, IInvoiceRepository
             Description = "Ingreso a fondo de reserva por pago registrado",
             Type = TransactionType.Split
         }, cancellationToken);
+
+        // 4b. Registrar split en blockchain
+        var splitResult = await _blockchainIntegrationService.RegisterSplitOnChainAsync(
+            payment.UnitId, montoOperativo, montoReserva, cancellationToken);
+        if (!splitResult.Success)
+        {
+            await _auditLogRepository.AddAsync(new AuditLog
+            {
+                Action = "Error al registrar split en blockchain",
+                EntityName = "Split",
+                EntityId = unit.Id.ToString(),
+                UserName = "system",
+                Details = $"Error: {splitResult.ErrorMessage}",
+                Timestamp = DateTime.UtcNow
+            }, cancellationToken);
+        }
 
         // 5. Actualizar saldos globales de fondos
         var operatingFund = await _globalFundRepository.GetByTypeAsync(GlobalFundType.Operating, cancellationToken);

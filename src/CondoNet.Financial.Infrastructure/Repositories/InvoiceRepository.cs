@@ -5,16 +5,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CondoNet.Financial.Infrastructure.Repositories;
 
-public class InvoiceRepository : IInvoiceRepository
+public class InvoiceRepository(FinancialDbContext context) : IInvoiceRepository
 {
-    private readonly FinancialDbContext _context;
-    public InvoiceRepository(FinancialDbContext context)
-    {
-        _context = context;
-    }
+    private readonly FinancialDbContext _context = context;
 
     public async Task<Invoice?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => await _context.Invoices.FindAsync(new object[] { id }, cancellationToken);
+        => await _context.Invoices.FindAsync([id], cancellationToken);
 
     public async Task<IEnumerable<Invoice>> GetByUnitAccountIdAsync(Guid unitAccountId, CancellationToken cancellationToken = default)
         => await _context.Invoices.Where(i => i.UnitAccountId == unitAccountId).ToListAsync(cancellationToken);
@@ -30,4 +26,6 @@ public class InvoiceRepository : IInvoiceRepository
         _context.Invoices.Update(invoice);
         await _context.SaveChangesAsync(cancellationToken);
     }
+    public async Task<IEnumerable<Invoice>> GetAllAsync(CancellationToken cancellationToken = default)
+        => await _context.Invoices.ToListAsync(cancellationToken);
 }

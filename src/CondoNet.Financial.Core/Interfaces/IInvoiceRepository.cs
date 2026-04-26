@@ -8,4 +8,5 @@ public interface IInvoiceRepository
     Task<IEnumerable<Invoice>> GetByUnitAccountIdAsync(Guid unitAccountId, CancellationToken cancellationToken = default);
     Task AddAsync(Invoice invoice, CancellationToken cancellationToken = default);
     Task UpdateAsync(Invoice invoice, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Invoice>> GetAllAsync(CancellationToken cancellationToken = default);
 }

@@ -5,19 +5,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CondoNet.Financial.Infrastructure.Repositories;
 
-public class TransactionRepository : ITransactionRepository
+public class TransactionRepository(FinancialDbContext context) : ITransactionRepository
 {
-    private readonly FinancialDbContext _context;
-    public TransactionRepository(FinancialDbContext context)
-    {
-        _context = context;
-    }
+    private readonly FinancialDbContext _context = context;
 
     public async Task<Transaction?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => await _context.Transactions.FindAsync(new object[] { id }, cancellationToken);
+        => await _context.Transactions.FindAsync([id], cancellationToken);
+
 
     public async Task<IEnumerable<Transaction>> GetByUnitAccountIdAsync(Guid unitAccountId, CancellationToken cancellationToken = default)
         => await _context.Transactions.Where(t => t.UnitAccountId == unitAccountId).ToListAsync(cancellationToken);
+
+    public async Task<IEnumerable<Transaction>> GetSplitsByUnitIdAsync(Guid unitAccountId, CancellationToken cancellationToken = default)
+        => await _context.Transactions
+            .Where(t => t.UnitAccountId == unitAccountId && t.Type == TransactionType.Split)
+            .ToListAsync(cancellationToken);
 
     public async Task AddAsync(Transaction transaction, CancellationToken cancellationToken = default)
     {

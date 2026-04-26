@@ -8,4 +8,5 @@ public interface ITransactionRepository
     Task<IEnumerable<Transaction>> GetByUnitAccountIdAsync(Guid unitAccountId, CancellationToken cancellationToken = default);
     Task AddAsync(Transaction transaction, CancellationToken cancellationToken = default);
     Task UpdateAsync(Transaction transaction, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Transaction>> GetSplitsByUnitIdAsync(Guid unitAccountId, CancellationToken cancellationToken = default);
 }

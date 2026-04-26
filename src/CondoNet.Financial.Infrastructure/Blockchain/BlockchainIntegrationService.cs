@@ -10,7 +10,8 @@ public class BlockchainIntegrationService(IBlockchainService blockchainService, 
     private readonly IBlockchainService _blockchainService = blockchainService;
     private readonly BlockchainSettings _settings = settings;
 
-    // Guarda un mensaje en la blockchain (simula registrar un pago)
+
+    // Registrar un pago en blockchain
     public async Task<BlockchainResponseDto> RegisterPaymentOnChainAsync(RegisterPaymentDto payment, CancellationToken cancellationToken = default)
     {
         try
@@ -19,12 +20,14 @@ public class BlockchainIntegrationService(IBlockchainService blockchainService, 
             var contractAddress = _settings.ContractAddress;
             var service = new CondoNetService(web3, contractAddress);
 
-            var function = new GuardarMensajeFunction
+            var function = new RegistrarPagoFunction
             {
-                NuevoMensaje = $"Pago registrado: Unidad={payment.UnitId}, Monto={payment.Amount}, Ref={payment.TransactionReference}"
+                UnitId = payment.UnitId,
+                Monto = Nethereum.Web3.Web3.Convert.ToWei(payment.Amount),
+                Referencia = payment.TransactionReference
             };
 
-            var txHash = await service.GuardarMensajeRequestAsync(function);
+            var txHash = await service.RegistrarPagoRequestAsync(function);
             return new BlockchainResponseDto { Success = true, TransactionHash = txHash };
         }
         catch (Exception ex)
@@ -33,7 +36,8 @@ public class BlockchainIntegrationService(IBlockchainService blockchainService, 
         }
     }
 
-    // Guarda el Merkle Root como mensaje (simula anclaje de integridad)
+
+    // Anclar Merkle Root en blockchain
     public async Task<BlockchainResponseDto> AnchorMerkleRootAsync(string merkleRoot, DateTime period, CancellationToken cancellationToken = default)
     {
         try
@@ -42,12 +46,14 @@ public class BlockchainIntegrationService(IBlockchainService blockchainService, 
             var contractAddress = _settings.ContractAddress;
             var service = new CondoNetService(web3, contractAddress);
 
-            var function = new GuardarMensajeFunction
+            var function = new AnchorMerkleRootFunction
             {
-                NuevoMensaje = $"MerkleRoot:{merkleRoot}|Periodo:{period:yyyy-MM}"
+                MerkleRoot = merkleRoot,
+                Year = period.Year,
+                Month = period.Month
             };
 
-            var txHash = await service.GuardarMensajeRequestAsync(function);
+            var txHash = await service.AnchorMerkleRootRequestAsync(function);
             return new BlockchainResponseDto { Success = true, TransactionHash = txHash };
         }
         catch (Exception ex)
@@ -56,7 +62,8 @@ public class BlockchainIntegrationService(IBlockchainService blockchainService, 
         }
     }
 
-    // Valida el Merkle Root leyendo el mensaje más reciente
+
+    // Validar Merkle Root en blockchain
     public async Task<bool> ValidateMerkleRootAsync(string merkleRoot, DateTime period, CancellationToken cancellationToken = default)
     {
         try
@@ -65,14 +72,112 @@ public class BlockchainIntegrationService(IBlockchainService blockchainService, 
             var contractAddress = _settings.ContractAddress;
             var service = new CondoNetService(web3, contractAddress);
 
-            var mensaje = await service.LeerMensajeQueryAsync();
-            // Espera que el mensaje tenga el formato "MerkleRoot:{merkleRoot}|Periodo:{period:yyyy-MM}"
-            var expected = $"MerkleRoot:{merkleRoot}|Periodo:{period:yyyy-MM}";
-            return mensaje == expected;
+            var result = await service.GetMerkleRootQueryAsync(period.Year, period.Month);
+            return string.Equals(result, merkleRoot, StringComparison.OrdinalIgnoreCase);
         }
         catch
         {
             return false;
+        }
+    }
+
+    // Registrar split en blockchain
+    public async Task<BlockchainResponseDto> RegisterSplitOnChainAsync(string unitId, decimal montoOperativo, decimal montoReserva, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var web3 = _blockchainService.Web3Instance;
+            var contractAddress = _settings.ContractAddress;
+            var service = new CondoNetService(web3, contractAddress);
+
+            var function = new RegistrarSplitFunction
+            {
+                UnitId = unitId,
+                MontoOperativo = Nethereum.Web3.Web3.Convert.ToWei(montoOperativo),
+                MontoReserva = Nethereum.Web3.Web3.Convert.ToWei(montoReserva)
+            };
+
+            var txHash = await service.RegistrarSplitRequestAsync(function);
+            return new BlockchainResponseDto { Success = true, TransactionHash = txHash };
+        }
+        catch (Exception ex)
+        {
+            return new BlockchainResponseDto { Success = false, ErrorMessage = ex.Message };
+        }
+    }
+
+    // Modificar gasto en blockchain
+    public async Task<BlockchainResponseDto> ModifyExpenseOnChainAsync(string expenseId, string descripcion, decimal monto, DateTime fecha, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var web3 = _blockchainService.Web3Instance;
+            var contractAddress = _settings.ContractAddress;
+            var service = new CondoNetService(web3, contractAddress);
+
+            var function = new ModificarGastoFunction
+            {
+                ExpenseId = expenseId,
+                Descripcion = descripcion,
+                Monto = Nethereum.Web3.Web3.Convert.ToWei(monto),
+                Fecha = new System.Numerics.BigInteger(((DateTimeOffset)fecha).ToUnixTimeSeconds())
+            };
+
+            var txHash = await service.ModificarGastoRequestAsync(function);
+            return new BlockchainResponseDto { Success = true, TransactionHash = txHash };
+        }
+        catch (Exception ex)
+        {
+            return new BlockchainResponseDto { Success = false, ErrorMessage = ex.Message };
+        }
+    }
+
+    // Revertir pago en blockchain
+    public async Task<BlockchainResponseDto> RevertPaymentOnChainAsync(string unitId, decimal monto, string referencia, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var web3 = _blockchainService.Web3Instance;
+            var contractAddress = _settings.ContractAddress;
+            var service = new CondoNetService(web3, contractAddress);
+
+            var function = new RevertirPagoFunction
+            {
+                UnitId = unitId,
+                Monto = Nethereum.Web3.Web3.Convert.ToWei(monto),
+                Referencia = referencia
+            };
+
+            var txHash = await service.RevertirPagoRequestAsync(function);
+            return new BlockchainResponseDto { Success = true, TransactionHash = txHash };
+        }
+        catch (Exception ex)
+        {
+            return new BlockchainResponseDto { Success = false, ErrorMessage = ex.Message };
+        }
+    }
+
+    // Actualizar configuración financiera en blockchain
+    public async Task<BlockchainResponseDto> UpdateConfigOnChainAsync(string campo, string valor, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var web3 = _blockchainService.Web3Instance;
+            var contractAddress = _settings.ContractAddress;
+            var service = new CondoNetService(web3, contractAddress);
+
+            var function = new ActualizarConfiguracionFunction
+            {
+                Campo = campo,
+                Valor = valor
+            };
+
+            var txHash = await service.ActualizarConfiguracionRequestAsync(function);
+            return new BlockchainResponseDto { Success = true, TransactionHash = txHash };
+        }
+        catch (Exception ex)
+        {
+            return new BlockchainResponseDto { Success = false, ErrorMessage = ex.Message };
         }
     }
 }
