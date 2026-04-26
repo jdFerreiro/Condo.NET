@@ -4,8 +4,9 @@ namespace CondoNet.Financial.Core.Interfaces
 {
     public interface IBillingService
     {
-        Task GenerateMonthlyBillAsync(DateTime period, CancellationToken cancellationToken = default);
-        Task GenerateExpenseAsync(ExpenseDto expense, CancellationToken cancellationToken = default);
+        Task<List<MonthlyBillDto>> GenerateMonthlyBillAsync(DateTime period, CancellationToken cancellationToken = default);
+        Task<ProratedExpenseDto> GenerateExpenseAsync(ExpenseDto expense, CancellationToken cancellationToken = default);
         Task<string> CalculateMerkleRootAsync(DateTime period, CancellationToken cancellationToken = default);
+        Task UpdateExpenseAsync(Guid expenseId, ExpenseDto updatedExpense, CancellationToken cancellationToken = default);
     }
 }

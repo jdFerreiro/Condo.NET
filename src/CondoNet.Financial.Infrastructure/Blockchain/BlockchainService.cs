@@ -12,10 +12,11 @@ namespace CondoNet.Financial.Infrastructure.Blockchain
         public string PrivateKey { get; set; } = string.Empty;
     }
 
+
     public interface IBlockchainService
     {
+        Web3 Web3Instance { get; }
         Task<string> GetBlockNumberAsync(CancellationToken cancellationToken = default);
-        // Aquí se agregarán métodos para interactuar con el contrato
     }
 
     public class BlockchainService : IBlockchainService
@@ -31,6 +32,8 @@ namespace CondoNet.Financial.Infrastructure.Blockchain
             var account = new Account(_settings.PrivateKey);
             _web3 = new Web3(account, _settings.RpcUrl);
         }
+
+        public Web3 Web3Instance => _web3;
 
         public async Task<string> GetBlockNumberAsync(CancellationToken cancellationToken = default)
         {

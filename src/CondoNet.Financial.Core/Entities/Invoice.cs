@@ -10,6 +10,10 @@
         public DateTime DueDate { get; set; }
         public InvoiceStatus Status { get; set; }
 
+        // Emisión de documento digital
+        public DateTime? FechaEmision { get; set; }
+        public bool IsEmitted { get; set; }
+
         // Trazabilidad Blockchain
         public string? MerkleRoot { get; set; }
         public string? BlockchainTxHash { get; set; }
