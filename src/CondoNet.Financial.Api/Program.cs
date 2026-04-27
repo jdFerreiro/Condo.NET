@@ -43,8 +43,14 @@ try
 
     builder.Host.UseSerilog();
 
+
     builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
     builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ")); // Asegúrate que coincida con tu .env/appsettings
+
+    // Registrar BlockchainSettings desde secrets
+    builder.Services.Configure<BlockchainSettings>(builder.Configuration.GetSection("BlockchainSettings"));
+    builder.Services.AddSingleton(resolver =>
+        resolver.GetRequiredService<Microsoft.Extensions.Options.IOptions<BlockchainSettings>>().Value);
 
     builder.Services.ConfigureHttpJsonOptions(options =>
     {
@@ -155,22 +161,28 @@ try
         });
 
     // 8. Inyección de Dependencias para Servicios y Repositorios
-    builder.Services.AddScoped<IBillingService, BillingService>();
-    builder.Services.AddScoped<IFinancialService, FinancialService>();
-    builder.Services.AddScoped<IMerkleTreeService, MerkleTreeService>();
-    builder.Services.AddScoped<IBlockchainIntegrationService, BlockchainIntegrationService>();
-    builder.Services.AddScoped<IGlobalFundRepository, GlobalFundRepository>();
-    builder.Services.AddScoped<IUnitAccountRepository, UnitAccountRepository>();
-    builder.Services.AddScoped<ICondoExpenseRepository, CondoExpenseRepository>();
-    builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
-    builder.Services.AddScoped<IFinancialSubSectionRepository, FinancialSubSectionRepository>();
-    builder.Services.AddScoped<IInvoiceItemRepository, InvoiceItemRepository>();
-    builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
-    builder.Services.AddScoped<IBillingConfigurationRepository, BillingConfigurationRepository>();
-    builder.Services.AddScoped<IFinancialCondominiumConfigurationRepository, FinancialCondominiumConfigurationRepository>();
-    builder.Services.AddScoped<IUnitAccountSectionRepository, UnitAccountSectionRepository>();
-    builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+    builder.Services.AddScoped<IBankTransactionRepository, BankTransactionRepository>();
+    builder.Services.AddScoped<IBillingConfigurationRepository, BillingConfigurationRepository>();
+    builder.Services.AddScoped<IBillingService, BillingService>();
+    builder.Services.AddScoped<IBlockchainIntegrationService, BlockchainIntegrationService>();
+    builder.Services.AddScoped<IBlockchainService, BlockchainService>();
+    builder.Services.AddScoped<ICondoExpenseRepository, CondoExpenseRepository>();
+    builder.Services.AddScoped<ICurrencyAdjustmentLogRepository, CurrencyAdjustmentLogRepository>();
+    builder.Services.AddScoped<ICurrencyRateRepository, CurrencyRateRepository>();
+    builder.Services.AddScoped<ICurrencyService, CurrencyService>();
+    builder.Services.AddScoped<IFinancialCondominiumConfigurationRepository, FinancialCondominiumConfigurationRepository>();
+    builder.Services.AddScoped<IFinancialService, FinancialService>();
+    builder.Services.AddScoped<IFinancialSubSectionRepository, FinancialSubSectionRepository>();
+    builder.Services.AddScoped<IGlobalFundRepository, GlobalFundRepository>();
+    builder.Services.AddScoped<IInvoiceItemRepository, InvoiceItemRepository>();
+    builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+    builder.Services.AddScoped<IMerkleTreeService, MerkleTreeService>();
+    builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+    builder.Services.AddScoped<IReportedPaymentRepository, ReportedPaymentRepository>();
+    builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+    builder.Services.AddScoped<IUnitAccountRepository, UnitAccountRepository>();
+    builder.Services.AddScoped<IUnitAccountSectionRepository, UnitAccountSectionRepository>();
 
     var app = builder.Build();
 

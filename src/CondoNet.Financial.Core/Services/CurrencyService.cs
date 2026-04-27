@@ -3,7 +3,8 @@ using CondoNet.Financial.Core.Interfaces;
 
 namespace CondoNet.Financial.Core.Services;
 
-public class CurrencyService(ICurrencyRateRepository currencyRateRepository, ICurrencyAdjustmentLogRepository adjustmentLogRepository) : ICurrencyService
+public class CurrencyService(ICurrencyRateRepository currencyRateRepository,
+    ICurrencyAdjustmentLogRepository adjustmentLogRepository) : ICurrencyService
 {
     private readonly ICurrencyRateRepository _currencyRateRepository = currencyRateRepository;
     private readonly ICurrencyAdjustmentLogRepository _adjustmentLogRepository = adjustmentLogRepository;
