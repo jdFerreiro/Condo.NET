@@ -16,7 +16,8 @@ public class FinancialService(
     IAuditLogRepository auditLogRepository,
     IGlobalFundRepository globalFundRepository,
     ICurrencyService currencyService,
-    ICurrencyAdjustmentLogRepository currencyAdjustmentLogRepository) : IFinancialService
+    ICurrencyAdjustmentLogRepository currencyAdjustmentLogRepository,
+    MassTransit.IPublishEndpoint publishEndpoint) : IFinancialService
 {
     private readonly ICurrencyService _currencyService = currencyService;
     private readonly IPaymentRepository _paymentRepo = paymentRepo;
@@ -28,7 +29,9 @@ public class FinancialService(
     private readonly IBlockchainIntegrationService _blockchainIntegrationService = blockchainIntegrationService;
     private readonly IGlobalFundRepository _globalFundRepository = globalFundRepository;
     private readonly IFinancialCondominiumConfigurationRepository _financialConfigRepo = financialCondominiumConfigurationRepository;
+
     private readonly ICurrencyAdjustmentLogRepository _currencyAdjustmentLogRepository = currencyAdjustmentLogRepository;
+    private readonly MassTransit.IPublishEndpoint _publishEndpoint = publishEndpoint;
 
     public async Task RegisterPaymentAsync(RegisterPaymentDto payment, CancellationToken cancellationToken = default)
     {
@@ -60,50 +63,85 @@ public class FinancialService(
         if (config.BlockOnDebt && unit.CurrentDebt > config.DebtLimit)
             throw new InvalidOperationException($"La unidad supera el límite de deuda permitido ({config.DebtLimit}). Acceso o servicios pueden estar bloqueados.");
 
-        // 7. Validar y aplicar diferencial cambiario si está habilitado
-        decimal montoARegistrar = payment.Amount;
+
+        // 7. Validar y aplicar diferencial cambiario y pagos multimoneda combinados
+        decimal montoARegistrar = 0;
         decimal fundImpact = 0;
         decimal remainingDebtUSD = 0;
-        if (config.EnableCurrencyDifferential)
+        List<PaymentDetail> paymentDetails = [];
+
+        if (isMultiCurrency)
         {
-            // Suponiendo que payment.Amount es en VES y tienes payment.AmountUSD en el DTO
-            var validation = await ValidatePaymentWithCurrencyDiffAsync(payment.UnitId, payment.AmountUSD, payment.Amount, cancellationToken);
-            montoARegistrar = payment.Amount; // Se puede ajustar según la lógica de negocio
-            fundImpact = validation.FundImpact;
-            remainingDebtUSD = validation.RemainingDebtUSD;
-
-            if (validation.AdjustmentRequired || fundImpact != 0)
+            decimal totalUSD = 0;
+            foreach (var detail in payment.PaymentDetails)
             {
-                // Registrar ajuste en CurrencyAdjustmentLog
-                // Suponiendo que tienes acceso a _currencyAdjustmentLogRepository
-                await _currencyAdjustmentLogRepository.AddAsync(new CurrencyAdjustmentLog
-                {
-                    OrganizationId = unit.OrganizationId,
-                    EntityType = EntityType.Unit,
-                    EntityId = unit.Id,
-                    ReferenceInvoiceId = invoice.Id,
-                    PreviousRate = 0, // Puedes obtener la tasa anterior si la tienes
-                    NewRate = 0, // Puedes obtener la tasa actual si la tienes
-                    AmountVesDiff = fundImpact,
-                    Reason = CurrencyAdjustmentReason.PaymentDifferential,
-                    CreatedAt = DateTime.UtcNow
-                }, cancellationToken);
+                // Obtener la tasa vigente para la moneda
+                var rate = detail.Currency == "USD" ? 1m : (await _currencyService.GetActiveRateAsync(detail.Currency, unit.OrganizationId, unit.CondominiumId, cancellationToken))?.Rate ?? 0m;
+                if (rate == 0 && detail.Currency != "USD")
+                    throw new InvalidOperationException($"No hay tasa activa para {detail.Currency}");
 
-                // Actualizar fondo de diferencial
-                var fund = await _globalFundRepository.GetByTypeAsync(GlobalFundType.Differential, cancellationToken);
-                if (fund != null)
+                // Convertir a USD para validación
+                decimal usdValue = detail.Currency == "USD" ? detail.Amount : detail.Amount / rate;
+                totalUSD += usdValue;
+
+                paymentDetails.Add(new PaymentDetail
                 {
-                    fund.Balance += fundImpact;
-                    await _globalFundRepository.UpdateAsync(fund, cancellationToken);
+                    Currency = detail.Currency,
+                    Amount = detail.Amount,
+                    RateAtMoment = rate,
+                    Method = detail.Method
+                });
+            }
+
+            montoARegistrar = payment.Amount > 0 ? payment.Amount : paymentDetails.Sum(x => x.Amount); // Monto total reportado
+
+            // Validar diferencial cambiario si está habilitado
+            if (config.EnableCurrencyDifferential)
+            {
+                var expectedUSD = deudaPendiente; // Deuda en USD
+                decimal tolerance = expectedUSD * 0.005m;
+                if (totalUSD >= (expectedUSD - tolerance))
+                {
+                    fundImpact = totalUSD - expectedUSD;
+                }
+                else
+                {
+                    remainingDebtUSD = expectedUSD - totalUSD;
                 }
 
-                // Actualizar saldo deudor si corresponde
-                if (remainingDebtUSD > 0)
+                if (fundImpact != 0 || remainingDebtUSD > 0)
                 {
-                    unit.CurrentDebt += remainingDebtUSD;
-                    await _unitAccountRepo.UpdateAsync(unit, cancellationToken);
+                    await _currencyAdjustmentLogRepository.AddAsync(new CurrencyAdjustmentLog
+                    {
+                        OrganizationId = unit.OrganizationId,
+                        EntityType = EntityType.Unit,
+                        EntityId = unit.Id,
+                        ReferenceInvoiceId = invoice.Id,
+                        PreviousRate = 0,
+                        NewRate = 0,
+                        AmountVesDiff = fundImpact,
+                        Reason = CurrencyAdjustmentReason.PaymentDifferential,
+                        CreatedAt = DateTime.UtcNow
+                    }, cancellationToken);
+
+                    var fund = await _globalFundRepository.GetByTypeAsync(GlobalFundType.Differential, cancellationToken);
+                    if (fund != null)
+                    {
+                        fund.Balance += fundImpact;
+                        await _globalFundRepository.UpdateAsync(fund, cancellationToken);
+                    }
+
+                    if (remainingDebtUSD > 0)
+                    {
+                        unit.CurrentDebt += remainingDebtUSD;
+                        await _unitAccountRepo.UpdateAsync(unit, cancellationToken);
+                    }
                 }
             }
+        }
+        else
+        {
+            montoARegistrar = payment.Amount;
         }
 
         // 8. Registrar el pago (pendiente de certificación)
@@ -114,9 +152,27 @@ public class FinancialService(
             Amount = montoARegistrar,
             Method = Enum.TryParse<PaymentMethod>(payment.PaymentMethod, out var method) ? method : PaymentMethod.Transfer,
             TransactionReference = payment.TransactionReference,
-            IsConfirmedOnChain = false
+            IsConfirmedOnChain = false,
+            PaymentDetails = paymentDetails
         };
         await _paymentRepo.AddAsync(paymentEntity, cancellationToken);
+
+        // Publicar evento PaymentValidatedEvent (para pagos simples)
+        if (!isMultiCurrency)
+        {
+            await _publishEndpoint.Publish(new CondoNet.Shared.Events.Payments.PaymentValidatedEvent
+            {
+                PaymentId = paymentEntity.Id,
+                OrganizationId = unit.OrganizationId,
+                UnitId = unit.Id,
+                AmountUSD = montoARegistrar, // Ajusta si tienes el monto en USD
+                AmountVES = montoARegistrar, // Ajusta si tienes el monto en VES
+                ExchangeRateApplied = 0, // Ajusta según la tasa usada
+                ValidationTimestamp = DateTime.UtcNow,
+                IsBalanceCleared = (remainingDebtUSD == 0),
+                CorrelationId = Guid.NewGuid().ToString()
+            }, cancellationToken);
+        }
 
         // 9. Registrar la transacción de pago en blockchain
         var blockchainResult = await _blockchainIntegrationService.RegisterPaymentOnChainAsync(payment, cancellationToken);

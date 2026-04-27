@@ -14,15 +14,17 @@ namespace CondoNET.Financial.Worker
                     // Registrar dependencias del Core y de infraestructura
                     services.AddScoped<DataIntegrityValidatorService>();
 
-                    // Aquí debes registrar los repositorios e infraestructura necesarios
-                    // Ejemplo:
-                    // services.AddScoped<IInvoiceRepository, InvoiceRepository>();
-                    // services.AddScoped<IBlockchainIntegrationService, BlockchainIntegrationService>();
-                    // services.AddScoped<IAuditLogRepository, AuditLogRepository>();
-                    // services.AddScoped<IUnitAccountRepository, UnitAccountRepository>();
-                    // services.AddScoped<ITransactionRepository, TransactionRepository>();
+
+                    // Repositorios usados por Matching Engine
+                    services.AddScoped<IReportedPaymentRepository, ReportedPaymentRepository>();
+                    services.AddScoped<IBankTransactionRepository, BankTransactionRepository>();
+                    services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
                     services.AddHostedService<DataIntegrityValidationWorker>();
+
+                    // Registrar Matching Engine y su Worker
+                    services.AddScoped<IMatchingEngine, MatchingEngineService>();
+                    services.AddHostedService<MatchingEngineWorker>();
                 })
                 .Build();
 
