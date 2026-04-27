@@ -18,4 +18,11 @@ public class GlobalFundRepository(Persistence.FinancialDbContext context) : IGlo
         _context.Set<GlobalFund>().Update(fund);
         await _context.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<IEnumerable<GlobalFund>> GetByOrganizationIdAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Set<GlobalFund>()
+            .Where(f => f.OrganizationId == organizationId)
+            .ToListAsync(cancellationToken);
+    }
 }
