@@ -1,22 +1,12 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using CondoNet.Financial.Core.Services;
 
 namespace CondoNET.Financial.Worker
 {
-    public class MatchingEngineWorker : BackgroundService
+    public class MatchingEngineWorker(IMatchingEngine matchingEngine, ILogger<MatchingEngineWorker> logger) : BackgroundService
     {
-        private readonly IMatchingEngine _matchingEngine;
-        private readonly ILogger<MatchingEngineWorker> _logger;
-
-        public MatchingEngineWorker(IMatchingEngine matchingEngine, ILogger<MatchingEngineWorker> logger)
-        {
-            _matchingEngine = matchingEngine;
-            _logger = logger;
-        }
+        private readonly IMatchingEngine _matchingEngine = matchingEngine;
+        private readonly ILogger<MatchingEngineWorker> _logger = logger;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {

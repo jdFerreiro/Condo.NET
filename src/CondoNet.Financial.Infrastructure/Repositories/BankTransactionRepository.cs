@@ -1,7 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using CondoNet.Financial.Core.Entities;
 using CondoNet.Financial.Core.Interfaces;
 using CondoNet.Financial.Infrastructure.Persistence;
@@ -9,13 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CondoNet.Financial.Infrastructure.Repositories;
 
-public class BankTransactionRepository : IBankTransactionRepository
+public class BankTransactionRepository(FinancialDbContext context) : IBankTransactionRepository
 {
-    private readonly FinancialDbContext _context;
-    public BankTransactionRepository(FinancialDbContext context)
-    {
-        _context = context;
-    }
+    private readonly FinancialDbContext _context = context;
 
     public async Task<IEnumerable<BankTransaction>> GetUnmatchedAsync(CancellationToken cancellationToken = default)
         => await _context.Set<BankTransaction>()

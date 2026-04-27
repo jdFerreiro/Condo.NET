@@ -1,6 +1,7 @@
 using CondoNet.Financial.Core.Entities;
 using CondoNet.Financial.Core.Interfaces;
 using CondoNet.Shared.DTOs.Financial;
+using MassTransit;
 
 namespace CondoNet.Financial.Core.Services;
 
@@ -17,7 +18,7 @@ public class FinancialService(
     IGlobalFundRepository globalFundRepository,
     ICurrencyService currencyService,
     ICurrencyAdjustmentLogRepository currencyAdjustmentLogRepository,
-    MassTransit.IPublishEndpoint publishEndpoint) : IFinancialService
+    IPublishEndpoint publishEndpoint) : IFinancialService
 {
     private readonly ICurrencyService _currencyService = currencyService;
     private readonly IPaymentRepository _paymentRepo = paymentRepo;
@@ -31,7 +32,7 @@ public class FinancialService(
     private readonly IFinancialCondominiumConfigurationRepository _financialConfigRepo = financialCondominiumConfigurationRepository;
 
     private readonly ICurrencyAdjustmentLogRepository _currencyAdjustmentLogRepository = currencyAdjustmentLogRepository;
-    private readonly MassTransit.IPublishEndpoint _publishEndpoint = publishEndpoint;
+    private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;
 
     public async Task RegisterPaymentAsync(RegisterPaymentDto payment, CancellationToken cancellationToken = default)
     {
@@ -64,7 +65,9 @@ public class FinancialService(
             throw new InvalidOperationException($"La unidad supera el límite de deuda permitido ({config.DebtLimit}). Acceso o servicios pueden estar bloqueados.");
 
 
+
         // 7. Validar y aplicar diferencial cambiario y pagos multimoneda combinados
+        bool isMultiCurrency = payment.PaymentDetails != null && payment.PaymentDetails.Count > 0;
         decimal montoARegistrar = 0;
         decimal fundImpact = 0;
         decimal remainingDebtUSD = 0;
@@ -73,7 +76,7 @@ public class FinancialService(
         if (isMultiCurrency)
         {
             decimal totalUSD = 0;
-            foreach (var detail in payment.PaymentDetails)
+            foreach (var detail in payment.PaymentDetails!)
             {
                 // Obtener la tasa vigente para la moneda
                 var rate = detail.Currency == "USD" ? 1m : (await _currencyService.GetActiveRateAsync(detail.Currency, unit.OrganizationId, unit.CondominiumId, cancellationToken))?.Rate ?? 0m;

@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MassTransit" Version="8.2.5" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CondoNet.Shared\CondoNet.Shared.csproj" />
   </ItemGroup>
 
