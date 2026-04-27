@@ -5,45 +5,30 @@ using CondoNet.Shared.DTOs.Financial;
 namespace CondoNet.Financial.Core.Services;
 
 
-public class FinancialService : IFinancialService
+public class FinancialService(
+    IPaymentRepository paymentRepo,
+    IInvoiceRepository invoiceRepo,
+    IUnitAccountRepository unitAccountRepo,
+    IBillingConfigurationRepository billingConfigRepo,
+    ITransactionRepository transactionRepo,
+    IFinancialCondominiumConfigurationRepository financialCondominiumConfigurationRepository,
+    IBlockchainIntegrationService blockchainIntegrationService,
+    IAuditLogRepository auditLogRepository,
+    IGlobalFundRepository globalFundRepository,
+    ICurrencyService currencyService,
+    ICurrencyAdjustmentLogRepository currencyAdjustmentLogRepository) : IFinancialService
 {
-    private readonly ICurrencyService _currencyService;
-    private readonly IPaymentRepository _paymentRepo;
-    private readonly IInvoiceRepository _invoiceRepo;
-    private readonly IUnitAccountRepository _unitAccountRepo;
-    private readonly IBillingConfigurationRepository _billingConfigRepo;
-    private readonly IAuditLogRepository _auditLogRepository;
-    private readonly ITransactionRepository _transactionRepo;
-    private readonly IBlockchainIntegrationService _blockchainIntegrationService;
-    private readonly IGlobalFundRepository _globalFundRepository;
-    private readonly IFinancialCondominiumConfigurationRepository _financialConfigRepo;
-    private readonly ICurrencyAdjustmentLogRepository _currencyAdjustmentLogRepository;
-
-    public FinancialService(
-        IPaymentRepository paymentRepo,
-        IInvoiceRepository invoiceRepo,
-        IUnitAccountRepository unitAccountRepo,
-        IBillingConfigurationRepository billingConfigRepo,
-        ITransactionRepository transactionRepo,
-        IFinancialCondominiumConfigurationRepository financialCondominiumConfigurationRepository,
-        IBlockchainIntegrationService blockchainIntegrationService,
-        IAuditLogRepository auditLogRepository,
-        IGlobalFundRepository globalFundRepository,
-        ICurrencyService currencyService,
-        ICurrencyAdjustmentLogRepository currencyAdjustmentLogRepository)
-    {
-        _currencyService = currencyService;
-        _paymentRepo = paymentRepo;
-        _invoiceRepo = invoiceRepo;
-        _unitAccountRepo = unitAccountRepo;
-        _billingConfigRepo = billingConfigRepo;
-        _auditLogRepository = auditLogRepository;
-        _transactionRepo = transactionRepo;
-        _blockchainIntegrationService = blockchainIntegrationService;
-        _globalFundRepository = globalFundRepository;
-        _financialConfigRepo = financialCondominiumConfigurationRepository;
-        _currencyAdjustmentLogRepository = currencyAdjustmentLogRepository;
-    }
+    private readonly ICurrencyService _currencyService = currencyService;
+    private readonly IPaymentRepository _paymentRepo = paymentRepo;
+    private readonly IInvoiceRepository _invoiceRepo = invoiceRepo;
+    private readonly IUnitAccountRepository _unitAccountRepo = unitAccountRepo;
+    private readonly IBillingConfigurationRepository _billingConfigRepo = billingConfigRepo;
+    private readonly IAuditLogRepository _auditLogRepository = auditLogRepository;
+    private readonly ITransactionRepository _transactionRepo = transactionRepo;
+    private readonly IBlockchainIntegrationService _blockchainIntegrationService = blockchainIntegrationService;
+    private readonly IGlobalFundRepository _globalFundRepository = globalFundRepository;
+    private readonly IFinancialCondominiumConfigurationRepository _financialConfigRepo = financialCondominiumConfigurationRepository;
+    private readonly ICurrencyAdjustmentLogRepository _currencyAdjustmentLogRepository = currencyAdjustmentLogRepository;
 
     public async Task RegisterPaymentAsync(RegisterPaymentDto payment, CancellationToken cancellationToken = default)
     {
@@ -100,7 +85,7 @@ public class FinancialService : IFinancialService
                     PreviousRate = 0, // Puedes obtener la tasa anterior si la tienes
                     NewRate = 0, // Puedes obtener la tasa actual si la tienes
                     AmountVesDiff = fundImpact,
-                    Reason = CurrencyAdjustmentReason "PAYMENT_DIFFERENTIAL",
+                    Reason = CurrencyAdjustmentReason.PaymentDifferential,
                     CreatedAt = DateTime.UtcNow
                 }, cancellationToken);
 
@@ -324,13 +309,10 @@ public class FinancialService : IFinancialService
         var unit = await _unitAccountRepo.GetByExternalUnitIdAsync(unitId, cancellationToken)
             ?? throw new InvalidOperationException("La unidad no existe.");
 
-        var config = await _financialConfigRepo.GetByCondominiumIdAsync(unit.CondominiumId, cancellationToken)
-            ?? throw new InvalidOperationException("No hay configuración financiera para el condominio.");
+        //var config = await _financialConfigRepo.GetByCondominiumIdAsync(unit.CondominiumId, cancellationToken)
+        //    ?? throw new InvalidOperationException("No hay configuración financiera para el condominio.");
 
-        var rate = await _currencyService.GetActiveRateAsync("VES", unit.OrganizationId, unit.CondominiumId, cancellationToken);
-        if (rate == null)
-            throw new InvalidOperationException("No hay tasa de cambio activa para VES.");
-
+        var rate = await _currencyService.GetActiveRateAsync("VES", unit.OrganizationId, unit.CondominiumId, cancellationToken) ?? throw new InvalidOperationException("No hay tasa de cambio activa para VES.");
         decimal expectedVES = amountUSD * rate.Rate;
         decimal tolerance = expectedVES * 0.005m;
 

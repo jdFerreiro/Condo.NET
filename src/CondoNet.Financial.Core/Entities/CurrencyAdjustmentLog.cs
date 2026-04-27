@@ -16,7 +16,8 @@ namespace CondoNet.Financial.Core.Entities
         DailyRevaluation,
         PaymentDelay,
         ManualCorrection,
-        RateUpdate
+        RateUpdate,
+        PaymentDifferential
     }
 
     public enum EntityType

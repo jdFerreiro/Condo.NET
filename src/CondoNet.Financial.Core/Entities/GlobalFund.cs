@@ -9,5 +9,6 @@ public class GlobalFund : BaseEntity
 public enum GlobalFundType
 {
     Operating = 1,
-    Reserve = 2
+    Reserve = 2,
+    Differential = 3,
 }
