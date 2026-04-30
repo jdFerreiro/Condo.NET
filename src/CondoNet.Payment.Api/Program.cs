@@ -1,7 +1,9 @@
 using CondoNet.BlockChain.Core;
 using CondoNet.BlockChain.Infrastructure;
+using CondoNet.Payment.Api.Endpoints;
 using CondoNet.Payment.Api.Services;
 using CondoNet.Payment.Core.Repositories;
+using CondoNet.Payment.Infrastructure.PaymentGateways;
 using CondoNet.Payment.Infrastructure.Persistence;
 using CondoNet.Payment.Infrastructure.Repositories;
 using CondoNet.Shared.Interfaces;

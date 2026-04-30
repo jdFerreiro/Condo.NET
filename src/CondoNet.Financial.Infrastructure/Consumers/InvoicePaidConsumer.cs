@@ -1,8 +1,6 @@
+using CondoNet.Financial.Core.Interfaces;
 using CondoNet.Shared.Events.Payments;
 using MassTransit;
-using CondoNet.Financial.Core.Repositories;
-using System.Threading.Tasks;
-using System.Threading;
 
 namespace CondoNet.Financial.Infrastructure.Consumers;
 
@@ -20,9 +18,8 @@ public class InvoicePaidConsumer : IConsumer<InvoicePaidEvent>
         var invoice = await _invoiceRepository.GetByIdAsync(evt.InvoiceId);
         if (invoice != null)
         {
-            invoice.Status = "Paid";
-            invoice.PaidAt = evt.PaidAt;
-            invoice.PaymentReference = evt.PaymentReference;
+            invoice.Status = Core.Entities.InvoiceStatus.Paid;
+            invoice.DueDate = evt.PaidAt;
             await _invoiceRepository.UpdateAsync(invoice);
         }
         // Si no existe, podrías loggear o manejar el error
