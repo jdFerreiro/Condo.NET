@@ -64,10 +64,29 @@ try
     var rabbitMqSettings = builder.Configuration.GetSection("RabbitMQ").Get<RabbitMqSettings>()
         ?? throw new InvalidOperationException("RabbitMQ no configurado.");
 
+
     // 2. Base de Datos
     builder.Services.AddDbContext<FinancialDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
         b => b.MigrationsAssembly("CondoNet.Financial.Infrastructure")));
+
+    // Registrar consumidor de eventos de facturas pagadas
+    builder.Services.AddMassTransit(x =>
+    {
+        x.AddConsumer<InvoicePaidConsumer>();
+        x.UsingRabbitMq((context, cfg) =>
+        {
+            cfg.Host(rabbitMqSettings.Host, (ushort)rabbitMqSettings.Port, "/", h =>
+            {
+                h.Username(rabbitMqSettings.Username);
+                h.Password(rabbitMqSettings.Password);
+            });
+            cfg.ReceiveEndpoint("invoice-paid-events", e =>
+            {
+                e.ConfigureConsumer<InvoicePaidConsumer>(context);
+            });
+        });
+    });
 
     builder.Services.AddHttpContextAccessor();
 
