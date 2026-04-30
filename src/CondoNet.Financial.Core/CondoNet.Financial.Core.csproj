@@ -4,7 +4,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <UserSecretsId>f1ad4924-6fea-493a-aa8f-fef64d236a7c</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CondoNet.BlockChain.Core\CondoNet.BlockChain.Core.csproj" />
     <ProjectReference Include="..\CondoNet.Shared\CondoNet.Shared.csproj" />
   </ItemGroup>
 

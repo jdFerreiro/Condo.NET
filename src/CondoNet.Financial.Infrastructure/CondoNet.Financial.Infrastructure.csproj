@@ -7,7 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CondoNet.Shared\CondoNet.Shared.csproj" />
     <ProjectReference Include="..\CondoNet.Financial.Core\CondoNet.Financial.Core.csproj" />
+    <ProjectReference Include="..\CondoNet.BlockChain.Core\CondoNet.BlockChain.Core.csproj" />
+    <ProjectReference Include="..\CondoNet.BlockChain.Infrastructure\CondoNet.BlockChain.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,6 +25,7 @@
     <PackageReference Include="Nethereum.RPC" Version="6.1.0" />
     <PackageReference Include="Nethereum.Web3" Version="6.1.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
+	<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.7" />
   </ItemGroup>
 
   <ItemGroup>

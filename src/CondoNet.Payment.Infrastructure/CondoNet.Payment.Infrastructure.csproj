@@ -11,7 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CondoNet.Shared\CondoNet.Shared.csproj" />
     <ProjectReference Include="..\CondoNet.Payment.Core\CondoNet.Payment.Core.csproj" />
+    <ProjectReference Include="..\CondoNet.BlockChain.Core\CondoNet.BlockChain.Core.csproj" />
+    <ProjectReference Include="..\CondoNet.BlockChain.Infrastructure\CondoNet.BlockChain.Infrastructure.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.7" />
   </ItemGroup>
 
 </Project>

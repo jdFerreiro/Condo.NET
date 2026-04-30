@@ -1,6 +1,7 @@
+using CondoNet.BlockChain.Core;
+using CondoNet.BlockChain.Infrastructure;
 using CondoNet.Financial.Core.Interfaces;
 using CondoNet.Financial.Core.Services;
-using CondoNet.Financial.Infrastructure.Blockchain;
 using CondoNet.Financial.Infrastructure.Persistence;
 using CondoNet.Financial.Infrastructure.Repositories;
 using CondoNet.Shared.Interfaces;
@@ -165,7 +166,6 @@ try
     builder.Services.AddScoped<IBankTransactionRepository, BankTransactionRepository>();
     builder.Services.AddScoped<IBillingConfigurationRepository, BillingConfigurationRepository>();
     builder.Services.AddScoped<IBillingService, BillingService>();
-    builder.Services.AddScoped<IBlockchainIntegrationService, BlockchainIntegrationService>();
     builder.Services.AddScoped<IBlockchainService, BlockchainService>();
     builder.Services.AddScoped<ICondoExpenseRepository, CondoExpenseRepository>();
     builder.Services.AddScoped<ICurrencyAdjustmentLogRepository, CurrencyAdjustmentLogRepository>();

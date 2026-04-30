@@ -1,5 +1,6 @@
 using CondoNet.Financial.Core.Interfaces;
 using CondoNet.Shared.DTOs.Financial;
+using CondoNet.BlockChain.Core;
 
 namespace CondoNet.Financial.Core.Services;
 

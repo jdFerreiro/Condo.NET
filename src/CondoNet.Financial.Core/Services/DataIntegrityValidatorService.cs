@@ -1,3 +1,4 @@
+using CondoNet.BlockChain.Core;
 using CondoNet.Financial.Core.Entities;
 using CondoNet.Financial.Core.Interfaces;
 
