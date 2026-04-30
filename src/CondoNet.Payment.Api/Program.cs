@@ -77,7 +77,20 @@ try
 
     builder.Services.AddHttpContextAccessor();
 
+
     builder.Services.AddScoped<ITenantService, TenantService>();
+
+    // Registro de pasarelas de pago y factory
+    builder.Services.AddSingleton<StripeOptions>();
+    builder.Services.AddSingleton<PaypalOptions>();
+    builder.Services.AddSingleton<MercadoPagoOptions>();
+    builder.Services.AddScoped<StripePaymentGatewayService>();
+    builder.Services.AddScoped<PaypalPaymentGatewayService>();
+    builder.Services.AddScoped<MercadoPagoPaymentGatewayService>();
+    builder.Services.AddScoped<IPaymentGatewayService>(sp => sp.GetRequiredService<StripePaymentGatewayService>());
+    builder.Services.AddScoped<IPaymentGatewayService>(sp => sp.GetRequiredService<PaypalPaymentGatewayService>());
+    builder.Services.AddScoped<IPaymentGatewayService>(sp => sp.GetRequiredService<MercadoPagoPaymentGatewayService>());
+    builder.Services.AddScoped<PaymentGatewayFactory>();
 
     // 4. OpenAPI / Swagger
     builder.Services.AddOpenApi();
@@ -172,7 +185,11 @@ try
     builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
     builder.Services.AddScoped<IWebhookEventRepository, WebhookEventRepository>();
 
+
     var app = builder.Build();
+
+    // Mapear endpoint de pagos
+    app.MapPaymentEndpoints();
 
     // 7. Pipeline de Middleware
     if (app.Environment.IsDevelopment())
@@ -214,8 +231,9 @@ try
     // o antes si es independiente. Aquí lo dejamos antes del ruteo.
     app.UseMiddleware<ApiKeyMiddleware>();
 
+
     // 4. Mapeo de Minimal APIs
-    //app.MapCondominiumEndpoints();
+    app.MapReceiptValidationEndpoints();
 
     app.Run();
 }
