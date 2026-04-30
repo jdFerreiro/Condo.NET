@@ -1,7 +1,6 @@
-using System.Threading;
-using System.Threading.Tasks;
 using CondoNet.Payment.Core.Models;
 using CondoNet.Payment.Core.Repositories;
+using CondoNet.Payment.Core.Services;
 
 namespace CondoNet.Payment.Infrastructure.Services;
 

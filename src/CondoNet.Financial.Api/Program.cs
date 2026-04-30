@@ -2,6 +2,7 @@ using CondoNet.BlockChain.Core;
 using CondoNet.BlockChain.Infrastructure;
 using CondoNet.Financial.Core.Interfaces;
 using CondoNet.Financial.Core.Services;
+using CondoNet.Financial.Infrastructure.Consumers;
 using CondoNet.Financial.Infrastructure.Persistence;
 using CondoNet.Financial.Infrastructure.Repositories;
 using CondoNet.Shared.Interfaces;
