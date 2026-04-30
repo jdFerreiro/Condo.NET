@@ -15,9 +15,14 @@
     <Project Path="src/CondoNet.Auth.Core/CondoNet.Auth.Core.csproj" Id="c78471d9-945c-4b92-aff8-f0b30e67fdf1" />
     <Project Path="src/CondoNet.Auth.Infrastructure/CondoNet.Auth.Infrastructure.csproj" Id="5a44e2fb-e066-4f8c-ba15-a9ee351f7591" />
   </Folder>
-  <Folder Name="/src/BlockChain/">
+  <Folder Name="/src/BlockChain Service/">
     <Project Path="src/CondoNet.BlockChain.Core/CondoNet.BlockChain.Core.csproj" Id="ad8235b0-0152-47fd-b5d9-c7afe9d1826a" />
     <Project Path="src/CondoNet.BlockChain.Infrastructure/CondoNet.BlockChain.Infrastructure.csproj" Id="f070eea7-a135-411a-a060-6f33f058304b" />
+  </Folder>
+  <Folder Name="/src/Booking Service/">
+    <Project Path="src/CondoNet.Booking.API/CondoNet.Booking.API.csproj" Id="7d8f967f-ef5d-43c0-aeae-2ba8e42c3b97" />
+    <Project Path="src/CondoNet.Booking.Core/CondoNet.Booking.Core.csproj" Id="c71d822e-74b5-4ef3-98c8-1ac5a6143c59" />
+    <Project Path="src/CondoNet.Booking.Infrastructure/CondoNet.Booking.Infrastructure.csproj" Id="f0280611-504a-4ec5-9dc6-e3bc8d2a281d" />
   </Folder>
   <Folder Name="/src/Financial Service/">
     <Project Path="src/CondoNet.Financial.Api/CondoNet.Financial.Api.csproj" Id="d470a0bb-41f2-40c9-a7a9-1531aa8d1925" />

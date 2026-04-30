@@ -1,10 +1,9 @@
-using CondoNet.BlockChain.Core;
-using CondoNet.BlockChain.Infrastructure;
-using CondoNet.Financial.Core.Interfaces;
-using CondoNet.Financial.Core.Services;
-using CondoNet.Financial.Infrastructure.Consumers;
-using CondoNet.Financial.Infrastructure.Persistence;
-using CondoNet.Financial.Infrastructure.Repositories;
+using CondoNet.Booking.API.Endpoints;
+using CondoNet.Booking.Core.Repositories;
+using CondoNet.Booking.Core.Services;
+using CondoNet.Booking.Infrastructure.Persistence;
+using CondoNet.Booking.Infrastructure.Repositories;
+using CondoNet.Booking.Infrastructure.Services;
 using CondoNet.Shared.Interfaces;
 using CondoNet.Shared.Middleware;
 using CondoNet.Shared.Services;
@@ -26,7 +25,7 @@ Log.Logger = new LoggerConfiguration()
 try
 {
 
-    Log.Information("Iniciando el microservicio Financial Service de CondoNET...");
+    Log.Information("Iniciando el microservicio Booking Service de CondoNET...");
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -45,14 +44,8 @@ try
 
     builder.Host.UseSerilog();
 
-
     builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
     builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ")); // Asegúrate que coincida con tu .env/appsettings
-
-    // Registrar BlockchainSettings desde secrets
-    builder.Services.Configure<BlockchainSettings>(builder.Configuration.GetSection("BlockchainSettings"));
-    builder.Services.AddSingleton(resolver =>
-        resolver.GetRequiredService<Microsoft.Extensions.Options.IOptions<BlockchainSettings>>().Value);
 
     builder.Services.ConfigureHttpJsonOptions(options =>
     {
@@ -65,40 +58,24 @@ try
     var rabbitMqSettings = builder.Configuration.GetSection("RabbitMQ").Get<RabbitMqSettings>()
         ?? throw new InvalidOperationException("RabbitMQ no configurado.");
 
-
     // 2. Base de Datos
-    builder.Services.AddDbContext<FinancialDbContext>(options =>
+    builder.Services.AddDbContext<BookingDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
-        b => b.MigrationsAssembly("CondoNet.Financial.Infrastructure")));
-
-    // Registrar consumidor de eventos de facturas pagadas
-    builder.Services.AddMassTransit(x =>
-    {
-        x.AddConsumer<InvoicePaidConsumer>();
-        x.UsingRabbitMq((context, cfg) =>
-        {
-            cfg.Host(rabbitMqSettings.Host, (ushort)rabbitMqSettings.Port, "/", h =>
-            {
-                h.Username(rabbitMqSettings.Username);
-                h.Password(rabbitMqSettings.Password);
-            });
-            cfg.ReceiveEndpoint("invoice-paid-events", e =>
-            {
-                e.ConfigureConsumer<InvoicePaidConsumer>(context);
-            });
-        });
-    });
+        b => b.MigrationsAssembly("CondoNet.Booking.Infrastructure")));
 
     builder.Services.AddHttpContextAccessor();
 
     builder.Services.AddScoped<ITenantService, TenantService>();
+    builder.Services.AddScoped<IBookingAvailabilityService, BookingAvailabilityService>();
+    builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+    builder.Services.AddScoped<IBookingService, BookingService>();
 
     // 4. OpenAPI / Swagger
     builder.Services.AddOpenApi();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(s =>
     {
-        s.SwaggerDoc("v1", new OpenApiInfo { Title = "CondoNet Financial API", Version = "v1" });
+        s.SwaggerDoc("v1", new OpenApiInfo { Title = "CondoNet Booking API", Version = "v1" });
 
         // Configuración de Seguridad en Swagger
         s.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -168,7 +145,7 @@ try
     builder.Services.AddAuthorizationBuilder()
         .AddPolicy("RequireAdminRole", policy =>
             policy.RequireRole("ADMIN"))
-        .AddPolicy("RequireFinancialRole", p => p.RequireRole("ADMIN", "FinancialManager"))
+        .AddPolicy("RequireBookingRole", p => p.RequireRole("ADMIN", "BookingManager"))
         .AddPolicy("RequiredAnyRole", p => p.RequireRole("ADMIN", "Manager", "User"));
 
     builder.Services.AddHttpClient("AuthService")
@@ -181,29 +158,6 @@ try
             return handler;
         });
 
-    // 8. Inyección de Dependencias para Servicios y Repositorios
-    builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
-    builder.Services.AddScoped<IBankTransactionRepository, BankTransactionRepository>();
-    builder.Services.AddScoped<IBillingConfigurationRepository, BillingConfigurationRepository>();
-    builder.Services.AddScoped<IBillingService, BillingService>();
-    builder.Services.AddScoped<IBlockchainService, BlockchainService>();
-    builder.Services.AddScoped<ICondoExpenseRepository, CondoExpenseRepository>();
-    builder.Services.AddScoped<ICurrencyAdjustmentLogRepository, CurrencyAdjustmentLogRepository>();
-    builder.Services.AddScoped<ICurrencyRateRepository, CurrencyRateRepository>();
-    builder.Services.AddScoped<ICurrencyService, CurrencyService>();
-    builder.Services.AddScoped<IFinancialCondominiumConfigurationRepository, FinancialCondominiumConfigurationRepository>();
-    builder.Services.AddScoped<IFinancialService, FinancialService>();
-    builder.Services.AddScoped<IFinancialSubSectionRepository, FinancialSubSectionRepository>();
-    builder.Services.AddScoped<IGlobalFundRepository, GlobalFundRepository>();
-    builder.Services.AddScoped<IInvoiceItemRepository, InvoiceItemRepository>();
-    builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
-    builder.Services.AddScoped<IMerkleTreeService, MerkleTreeService>();
-    builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
-    builder.Services.AddScoped<IReportedPaymentRepository, ReportedPaymentRepository>();
-    builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
-    builder.Services.AddScoped<IUnitAccountRepository, UnitAccountRepository>();
-    builder.Services.AddScoped<IUnitAccountSectionRepository, UnitAccountSectionRepository>();
-
     var app = builder.Build();
 
     // 7. Pipeline de Middleware
@@ -212,7 +166,7 @@ try
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "CondoNet Financial API V1");
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "CondoNet Booking API V1");
             c.RoutePrefix = string.Empty;
         });
     }
@@ -247,13 +201,13 @@ try
     app.UseMiddleware<ApiKeyMiddleware>();
 
     // 4. Mapeo de Minimal APIs
-    //app.MapCondominiumEndpoints();
+    app.MapBookingEndpoints();
 
     app.Run();
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Financial service falló en el arranque.");
+    Log.Fatal(ex, "Booking service falló en el arranque.");
 }
 finally
 {

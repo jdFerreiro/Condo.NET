@@ -33,11 +33,24 @@ services:
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${DB_NAME_AUTH}
+      - POSTGRES_DB=${DB_NAME_FINANCIAL}
     ports:
       - "5435:5432" # Puerto para financial
     volumes:
       - financial_db_data:/var/lib/postgresql/data
+
+  # Base de datos exclusiva para Booking
+  db.booking:
+    image: postgres:15-alpine
+    container_name: condonet.db.booking
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${DB_NAME_BOOKING}
+    ports:
+      - "5436:5432" # Puerto para booking
+    volumes:
+      - booking_db_data:/var/lib/postgresql/data
 
   # Accceso a RabbitMQ
   rabbitmq:
@@ -129,9 +142,36 @@ services:
       - "8281:443"
     volumes:
       - ./logs/financial:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
+ 
+  booking-service:
+    build:
+      context: .
+      dockerfile: src/CondoNet.Booking.Api/Dockerfile
+    container_name: condonet_booking
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db.booking;Database=${DB_NAME_BOOKING};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};
+      - JwtSettings__Secret=${JWT_SECRET}
+      - JwtSettings__Issuer=${JWT_ISSUER}
+      - JwtSettings__Audience=${JWT_AUDIENCE}
+      - RabbitMQ__Host=${RABBITMQ_DEFAULT_HOST}
+      - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
+      - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+    depends_on:
+      - db.booking  
+      - rabbitmq
+    ports:
+      - "8380:80"
+      - "8381:443"
+    volumes:
+      - ./logs/booking:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
+
 
 volumes:
   pgdata:
   auth_db_data:  # Asegúrate de que este nombre sea EXACTO al que pusiste en db.auth
   asset_db_data: # Y este para el de assets
   financial_db_data: # Y este para el de financials
+  booking_db_data: # Y este para el de booking
