@@ -28,13 +28,17 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-# Copia el script desde el contexto raíz y da permisos de ejecución
-# Copiar el script
-COPY wait-for-it.sh ./wait-for-it.sh
+# ... después del COPY --from=publish ...
 
-# Esta línea elimina finales de línea de Windows (\r) y asegura formato Linux
-RUN sed -i 's/\r$//' ./wait-for-it.sh && \
-    chmod +x ./wait-for-it.sh
+# Volvemos a root para asegurar la copia con permisos
+USER root
 
+# Copiamos con el permiso de ejecución ya asignado y limpiamos el formato Windows
+COPY --chmod=755 wait-for-it.sh ./wait-for-it.sh
+RUN sed -i 's/\r$//' ./wait-for-it.sh
+
+# Cambiamos al usuario de la aplicación
 USER $APP_UID
-ENTRYPOINT ["./wait-for-it.sh", "rabbitmq", "5672", "dotnet", "CondoNet.Booking.API.dll"]
+
+# Importante: Usa el nombre correcto del servicio RabbitMQ (según tu imagen anterior es condonet_rabbitmq)
+ENTRYPOINT ["./wait-for-it.sh", "condonet_rabbitmq:5672", "--", "dotnet", "CondoNET.Asset.Api.dll"]

@@ -11,26 +11,31 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["src/CondoNet.Asset.Api/CondoNET.Asset.Api.csproj", "src/CondoNet.Asset.Api/"]
-RUN dotnet restore "./src/CondoNet.Asset.Api/CondoNET.Asset.Api.csproj"
+COPY ["src/CondoNet.Asset.Api/CondoNet.Asset.Api.csproj", "src/CondoNet.Asset.Api/"]
+RUN dotnet restore "./src/CondoNet.Asset.Api/CondoNet.Asset.Api.csproj"
 COPY . .
 WORKDIR "/src/src/CondoNet.Asset.Api"
-RUN dotnet build "./CondoNET.Asset.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
-
+RUN dotnet build "./CondoNet.Asset.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build	
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./CondoNET.Asset.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./CondoNet.Asset.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-# Copia el script wait-for-it.sh antes del ENTRYPOINT
+# ... después del COPY --from=publish ...
 
-# Copia el script desde el contexto raíz y da permisos de ejecución
-COPY wait-for-it.sh ./wait-for-it.sh
-RUN ls -l ./wait-for-it.sh
-RUN chmod +x ./wait-for-it.sh
+# Volvemos a root para asegurar la copia con permisos
+USER root
+
+# Copiamos con el permiso de ejecución ya asignado y limpiamos el formato Windows
+COPY --chmod=755 wait-for-it.sh ./wait-for-it.sh
+RUN sed -i 's/\r$//' ./wait-for-it.sh
+
+# Cambiamos al usuario de la aplicación
 USER $APP_UID
-ENTRYPOINT ["./wait-for-it.sh", "rabbitmq", "5672", "dotnet", "CondoNET.Asset.Api.dll"]
+
+# Importante: Usa el nombre correcto del servicio RabbitMQ (según tu imagen anterior es condonet_rabbitmq)
+ENTRYPOINT ["./wait-for-it.sh", "condonet_rabbitmq:5672", "--", "dotnet", "CondoNet.Asset.Api.dll"]
