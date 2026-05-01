@@ -45,9 +45,9 @@ try
     builder.Host.UseSerilog();
 
     // Redis
-    var redisConnectionString = builder.Configuration["ConnectionStrings:Redis"];
+    var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
     if (string.IsNullOrWhiteSpace(redisConnectionString))
-        throw new InvalidOperationException("Redis:ConnectionString no configurado. Usa User Secrets para agregarlo en desarrollo.");
+        throw new InvalidOperationException("ConnectionStrings:Redis no configurado. Usa User Secrets para agregarlo en desarrollo.");
     builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
         StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString));
 
