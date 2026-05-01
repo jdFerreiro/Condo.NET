@@ -2,27 +2,28 @@ using CondoNet.Financial.Core.Interfaces;
 using CondoNet.Shared.Events.Payments;
 using MassTransit;
 
-namespace CondoNet.Financial.Infrastructure.Consumers;
-
-public class InvoicePaidConsumer : IConsumer<InvoicePaidEvent>
+namespace CondoNet.Financial.Infrastructure.Consumers
 {
-    private readonly IInvoiceRepository _invoiceRepository;
-    public InvoicePaidConsumer(IInvoiceRepository invoiceRepository)
+    public class InvoicePaidConsumer : IConsumer<InvoicePaidEvent>
     {
-        _invoiceRepository = invoiceRepository;
-    }
-
-    public async Task Consume(ConsumeContext<InvoicePaidEvent> context)
-    {
-        var evt = context.Message;
-        var invoice = await _invoiceRepository.GetByIdAsync(evt.InvoiceId);
-        if (invoice != null)
+        private readonly IInvoiceRepository _invoiceRepository;
+        public InvoicePaidConsumer(IInvoiceRepository invoiceRepository)
         {
-            invoice.Status = "Paid";
-            invoice.PaidAt = evt.PaidAt;
-            invoice.PaymentReference = evt.PaymentReference;
-            await _invoiceRepository.UpdateAsync(invoice);
+            _invoiceRepository = invoiceRepository;
         }
-        // Si no existe, podrías loggear o manejar el error
+
+        public async Task Consume(ConsumeContext<InvoicePaidEvent> context)
+        {
+            var evt = context.Message;
+            var invoice = await _invoiceRepository.GetByIdAsync(evt.InvoiceId);
+            if (invoice != null)
+            {
+                invoice.Status = Core.Entities.InvoiceStatus.Paid;
+                invoice.UpdatedAt = evt.PaidAt;
+                // invoice.PaymentReference = evt.PaymentReference;
+                await _invoiceRepository.UpdateAsync(invoice);
+            }
+            // Si no existe, podrías loggear o manejar el error
+        }
     }
 }
