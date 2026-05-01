@@ -29,9 +29,12 @@ COPY --from=publish /app/publish .
 # Copia el script wait-for-it.sh antes del ENTRYPOINT
 
 # Copia el script desde el contexto raíz y da permisos de ejecución
+# Copiar el script
 COPY wait-for-it.sh ./wait-for-it.sh
-RUN ls -l ./wait-for-it.sh
-RUN chmod +x ./wait-for-it.sh
-RUN chmod +x ./wait-for-it.sh
+
+# Esta línea elimina finales de línea de Windows (\r) y asegura formato Linux
+RUN sed -i 's/\r$//' ./wait-for-it.sh && \
+    chmod +x ./wait-for-it.sh
+
 USER $APP_UID
 ENTRYPOINT ["./wait-for-it.sh", "rabbitmq", "5672", "dotnet", "CondoNet.Auth.Api.dll"]
