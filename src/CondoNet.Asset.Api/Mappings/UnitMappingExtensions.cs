@@ -2,7 +2,7 @@
 using CondoNet.Shared.Asset;
 using CondoNet.Shared.Asset.DTOs;
 
-namespace CondoNet.Assets.API.Mappings
+namespace CondoNet.Asset.Api.Mappings
 {
     public static class UnitMappingExtensions
     {

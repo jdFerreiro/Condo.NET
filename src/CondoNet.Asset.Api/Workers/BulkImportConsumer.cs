@@ -1,27 +1,20 @@
-﻿using CondoNet.Asset.Core.Entities;
+﻿using CondoNet.Asset.Api.Mappings;
+using CondoNet.Asset.Core.Entities;
 using CondoNet.Asset.Infrastructure.Persistence;
-using CondoNet.Assets.API.Mappings;
 using CondoNet.Shared.Asset.Events;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
-namespace CondoNet.Assets.Workers;
+namespace CondoNet.Asset.Api.Workers;
 
-public class BulkImportConsumer : IConsumer<ProcessBulkImportCommand>
+public class BulkImportConsumer(
+    AssetDbContext context,
+    IPublishEndpoint publishEndpoint,
+    ILogger<BulkImportConsumer> logger) : IConsumer<ProcessBulkImportCommand>
 {
-    private readonly AssetDbContext _context;
-    private readonly IPublishEndpoint _publishEndpoint;
-    private readonly ILogger<BulkImportConsumer> _logger;
-
-    public BulkImportConsumer(
-        AssetDbContext context,
-        IPublishEndpoint publishEndpoint,
-        ILogger<BulkImportConsumer> logger)
-    {
-        _context = context;
-        _publishEndpoint = publishEndpoint;
-        _logger = logger;
-    }
+    private readonly AssetDbContext _context = context;
+    private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;
+    private readonly ILogger<BulkImportConsumer> _logger = logger;
 
     public async Task Consume(ConsumeContext<ProcessBulkImportCommand> context)
     {

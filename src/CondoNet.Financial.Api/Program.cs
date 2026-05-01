@@ -172,6 +172,7 @@ try
     builder.Services.AddScoped<IBillingConfigurationRepository, BillingConfigurationRepository>();
     builder.Services.AddScoped<IBillingService, BillingService>();
     builder.Services.AddScoped<IBlockchainService, BlockchainService>();
+    builder.Services.AddScoped<IBlockchainIntegrationService, BlockchainIntegrationService>();
     builder.Services.AddScoped<ICondoExpenseRepository, CondoExpenseRepository>();
     builder.Services.AddScoped<ICurrencyAdjustmentLogRepository, CurrencyAdjustmentLogRepository>();
     builder.Services.AddScoped<ICurrencyRateRepository, CurrencyRateRepository>();

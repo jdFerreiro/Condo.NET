@@ -41,4 +41,4 @@ RUN sed -i 's/\r$//' ./wait-for-it.sh
 USER $APP_UID
 
 # Importante: Usa el nombre correcto del servicio RabbitMQ (según tu imagen anterior es condonet_rabbitmq)
-ENTRYPOINT ["./wait-for-it.sh", "condonet_rabbitmq:5672", "--", "dotnet", "CondoNET.Asset.Api.dll"]
+ENTRYPOINT ["./wait-for-it.sh", "condonet_rabbitmq:5673", "--", "dotnet", "CondoNet.Financial.Api.dll"]

@@ -1,6 +1,8 @@
 using CondoNet.Booking.API.Endpoints;
+using CondoNet.Booking.Core.Events;
 using CondoNet.Booking.Core.Repositories;
 using CondoNet.Booking.Core.Services;
+using CondoNet.Booking.Infrastructure.Events;
 using CondoNet.Booking.Infrastructure.Persistence;
 using CondoNet.Booking.Infrastructure.Repositories;
 using CondoNet.Booking.Infrastructure.Services;
@@ -45,9 +47,10 @@ try
     builder.Host.UseSerilog();
 
     // Redis
-    var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+    string redisConnectionString = builder.Configuration.GetSection("Redis:ConnectionStrings").Value ?? "redis:6379";
     if (string.IsNullOrWhiteSpace(redisConnectionString))
-        throw new InvalidOperationException("ConnectionStrings:Redis no configurado. Usa User Secrets para agregarlo en desarrollo.");
+        throw new InvalidOperationException("Redis:ConnectionStrings no configurado. Usa User Secrets para agregarlo en desarrollo.");
+
     builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
         StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString));
 
@@ -75,7 +78,8 @@ try
     builder.Services.AddScoped<ITenantService, TenantService>();
     builder.Services.AddScoped<IBookingAvailabilityService, BookingAvailabilityService>();
     builder.Services.AddScoped<IBookingRepository, BookingRepository>();
-    builder.Services.AddScoped<IBookingService, BookingService>();
+    builder.Services.AddScoped<IBookingService, CondoNet.Booking.Core.Services.BookingService>();
+    builder.Services.AddScoped<IEventPublisher, EventPublisher>();
 
     // 4. OpenAPI / Swagger
     builder.Services.AddOpenApi();
