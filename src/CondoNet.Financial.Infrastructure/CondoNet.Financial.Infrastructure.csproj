@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CondoNet.Financial.Core\CondoNet.Financial.Core.csproj" />
+    <ProjectReference Include="..\CondoNet.Shared\CondoNet.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
