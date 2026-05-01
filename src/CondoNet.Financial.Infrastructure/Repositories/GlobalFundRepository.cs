@@ -8,7 +8,7 @@ public class GlobalFundRepository(Persistence.FinancialDbContext context) : IGlo
 {
     private readonly Persistence.FinancialDbContext _context = context;
 
-    public async Task<GlobalFund?> GetByTypeAsync(GlobalFundType fundType, CancellationToken cancellationToken = default)
+    public async Task<GlobalFund> GetByTypeAsync(GlobalFundType fundType, CancellationToken cancellationToken = default)
     {
         return await _context.Set<GlobalFund>().FirstOrDefaultAsync(f => f.FundType == fundType, cancellationToken);
     }

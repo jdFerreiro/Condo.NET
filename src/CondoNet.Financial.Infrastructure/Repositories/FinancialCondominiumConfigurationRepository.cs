@@ -8,7 +8,7 @@ public class FinancialCondominiumConfigurationRepository(Persistence.FinancialDb
 {
     private readonly Persistence.FinancialDbContext _context = context;
 
-    public async Task<FinancialCondominiumConfiguration?> GetByCondominiumIdAsync(Guid condominiumId, CancellationToken cancellationToken = default)
+    public async Task<FinancialCondominiumConfiguration> GetByCondominiumIdAsync(Guid condominiumId, CancellationToken cancellationToken = default)
     {
         return await _context.Set<FinancialCondominiumConfiguration>()
             .FirstOrDefaultAsync(c => c.CondominiumId == condominiumId, cancellationToken);

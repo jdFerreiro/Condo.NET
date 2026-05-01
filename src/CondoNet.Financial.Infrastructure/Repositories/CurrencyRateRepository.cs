@@ -9,12 +9,12 @@ public class CurrencyRateRepository(FinancialDbContext context) : ICurrencyRateR
 {
     private readonly FinancialDbContext _context = context;
 
-    public async Task<CurrencyRate?> GetByCurrencyAndDateAsync(string currencyIsoCode, DateTime date, Guid organizationId, Guid condominiumId, CancellationToken cancellationToken = default)
+    public async Task<CurrencyRate> GetByCurrencyAndDateAsync(string currencyIsoCode, DateTime date, Guid organizationId, Guid condominiumId, CancellationToken cancellationToken = default)
         => await _context.Set<CurrencyRate>()
             .Where(r => r.CurrencyIsoCode == currencyIsoCode && r.Date.Date == date.Date)
             .FirstOrDefaultAsync(cancellationToken);
 
-    public async Task<CurrencyRate?> GetActiveRateAsync(string currencyIsoCode, Guid organizationId, Guid condominiumId, CancellationToken cancellationToken = default)
+    public async Task<CurrencyRate> GetActiveRateAsync(string currencyIsoCode, Guid organizationId, Guid condominiumId, CancellationToken cancellationToken = default)
         => await _context.Set<CurrencyRate>()
             .Where(r => r.CurrencyIsoCode == currencyIsoCode && r.IsActive)
             .OrderByDescending(r => r.Date)
