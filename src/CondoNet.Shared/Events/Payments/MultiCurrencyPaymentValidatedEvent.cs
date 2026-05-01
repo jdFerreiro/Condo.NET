@@ -1,14 +1,12 @@
-using System;
-using System.Collections.Generic;
-
-namespace CondoNet.Shared.Events.Payments;
-
-public record MultiCurrencyPaymentValidatedEvent
+namespace CondoNet.Shared.Events.Payments
 {
-    public Guid PaymentId { get; init; }
-    public List<CurrencyDetail> Breakdown { get; init; } = new();
-    public decimal TotalUSDValue { get; init; }
-    public bool IsFullPayment { get; init; }
-}
+    public record MultiCurrencyPaymentValidatedEvent
+    {
+        public Guid PaymentId { get; init; }
+        public List<CurrencyDetail> Breakdown { get; init; } = new();
+        public decimal TotalUSDValue { get; init; }
+        public bool IsFullPayment { get; init; }
+    }
 
-public record CurrencyDetail(string Currency, decimal Amount, decimal Rate);
+    public record CurrencyDetail(string Currency, decimal Amount, decimal Rate);
+}
