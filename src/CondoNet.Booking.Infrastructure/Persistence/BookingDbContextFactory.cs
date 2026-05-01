@@ -15,8 +15,8 @@ namespace CondoNet.Booking.Infrastructure.Persistence
                 .AddJsonFile("appsettings.json", optional: true)
                 .Build();
 
-            var connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? "Host=localhost;Database=CondoNetBooking;Username=postgres;Password=postgres;Trust Server Certificate=true";
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            Console.WriteLine(connectionString);
 
             var optionsBuilder = new DbContextOptionsBuilder<BookingDbContext>();
             optionsBuilder.UseNpgsql(connectionString);

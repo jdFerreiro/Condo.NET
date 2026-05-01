@@ -44,6 +44,13 @@ try
 
     builder.Host.UseSerilog();
 
+    // Redis
+    var redisConnectionString = builder.Configuration["ConnectionStrings:Redis"];
+    if (string.IsNullOrWhiteSpace(redisConnectionString))
+        throw new InvalidOperationException("Redis:ConnectionString no configurado. Usa User Secrets para agregarlo en desarrollo.");
+    builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
+        StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString));
+
     builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
     builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ")); // Asegúrate que coincida con tu .env/appsettings
 

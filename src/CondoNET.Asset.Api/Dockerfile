@@ -11,16 +11,16 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["src/CondoNet.Asset.Api/CondoNet.Asset.Api.csproj", "src/CondoNet.Asset.Api/"]
-RUN dotnet restore "./src/CondoNet.Asset.Api/CondoNet.Asset.Api.csproj"
+COPY ["src/CondoNet.Asset.Api/CondoNET.Asset.Api.csproj", "src/CondoNet.Asset.Api/"]
+RUN dotnet restore "./src/CondoNet.Asset.Api/CondoNET.Asset.Api.csproj"
 COPY . .
 WORKDIR "/src/src/CondoNet.Asset.Api"
-RUN dotnet build "./CondoNet.Asset.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "./CondoNET.Asset.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./CondoNet.Asset.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./CondoNET.Asset.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
@@ -30,4 +30,4 @@ COPY --from=publish /app/publish .
 COPY /wait-for-it.sh ./wait-for-it.sh
 RUN chmod +x ./wait-for-it.sh
 USER $APP_UID
-ENTRYPOINT ["./wait-for-it.sh", "rabbitmq", "5672", "dotnet", "CondoNet.Asset.Api.dll"]
+ENTRYPOINT ["./wait-for-it.sh", "rabbitmq", "5672", "dotnet", "CondoNET.Asset.Api.dll"]
