@@ -5,16 +5,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CondoNet.Financial.Infrastructure.Repositories;
 
-public class FinancialSubSectionRepository : IFinancialSubSectionRepository
+public class FinancialSubSectionRepository(FinancialDbContext context) : IFinancialSubSectionRepository
 {
-    private readonly FinancialDbContext _context;
-    public FinancialSubSectionRepository(FinancialDbContext context)
-    {
-        _context = context;
-    }
+    private readonly FinancialDbContext _context = context;
 
-    public async Task<FinancialSubSection?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => await _context.FinancialSubSections.FindAsync(new object[] { id }, cancellationToken);
+    public async Task<FinancialSubSection> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => await _context.FinancialSubSections.FindAsync([id], cancellationToken);
 
     public async Task<IEnumerable<FinancialSubSection>> GetAllAsync(CancellationToken cancellationToken = default)
         => await _context.FinancialSubSections.ToListAsync(cancellationToken);

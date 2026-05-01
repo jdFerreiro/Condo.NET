@@ -9,7 +9,7 @@ public class InvoiceRepository(FinancialDbContext context) : IInvoiceRepository
 {
     private readonly FinancialDbContext _context = context;
 
-    public async Task<Invoice?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<Invoice> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _context.Invoices.FindAsync([id], cancellationToken);
 
     public async Task<IEnumerable<Invoice>> GetByUnitAccountIdAsync(Guid unitAccountId, CancellationToken cancellationToken = default)

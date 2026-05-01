@@ -126,21 +126,6 @@ try
         });
     });
 
-    // 5. MassTransit con RabbitMQ (Simplificado)
-    builder.Services.AddMassTransit(x =>
-    {
-        x.UsingRabbitMq((context, cfg) =>
-        {
-            // Usamos solo el nombre del host (localhost o rabbitmq)
-            cfg.Host(rabbitMqSettings.Host, (ushort)rabbitMqSettings.Port, "/", h =>
-            {
-                // Configuramos el puerto por separado
-                h.Username(rabbitMqSettings.Username);
-                h.Password(rabbitMqSettings.Password);
-            });
-        });
-    });
-
     // 6. Autenticación JWT
     var key = Encoding.ASCII.GetBytes(jwtSettings.Secret); // Usamos .Secret de tu clase
 

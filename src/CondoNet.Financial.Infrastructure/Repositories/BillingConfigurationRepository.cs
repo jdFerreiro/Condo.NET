@@ -5,18 +5,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CondoNet.Financial.Infrastructure.Repositories;
 
-public class BillingConfigurationRepository : IBillingConfigurationRepository
+public class BillingConfigurationRepository(FinancialDbContext context) : IBillingConfigurationRepository
 {
-    private readonly FinancialDbContext _context;
-    public BillingConfigurationRepository(FinancialDbContext context)
-    {
-        _context = context;
-    }
+    private readonly FinancialDbContext _context = context;
 
-    public async Task<BillingConfiguration?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => await _context.BillingConfigurations.FindAsync(new object[] { id }, cancellationToken);
+    public async Task<BillingConfiguration> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => await _context.BillingConfigurations.FindAsync([id], cancellationToken);
 
-    public async Task<BillingConfiguration?> GetCurrentAsync(CancellationToken cancellationToken = default)
+    public async Task<BillingConfiguration> GetCurrentAsync(CancellationToken cancellationToken = default)
         => await _context.BillingConfigurations.OrderByDescending(b => b.Id).FirstOrDefaultAsync(cancellationToken);
 
     public async Task AddAsync(BillingConfiguration config, CancellationToken cancellationToken = default)
