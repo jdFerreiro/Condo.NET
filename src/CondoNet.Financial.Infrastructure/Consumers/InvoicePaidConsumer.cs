@@ -18,9 +18,9 @@ public class InvoicePaidConsumer : IConsumer<InvoicePaidEvent>
         var invoice = await _invoiceRepository.GetByIdAsync(evt.InvoiceId);
         if (invoice != null)
         {
-            invoice.Status = Core.Entities.InvoiceStatus.Paid;
-            invoice.UpdatedAt = evt.PaidAt;
-            // invoice. = evt.PaymentReference;
+            invoice.Status = "Paid";
+            invoice.PaidAt = evt.PaidAt;
+            invoice.PaymentReference = evt.PaymentReference;
             await _invoiceRepository.UpdateAsync(invoice);
         }
         // Si no existe, podrías loggear o manejar el error
