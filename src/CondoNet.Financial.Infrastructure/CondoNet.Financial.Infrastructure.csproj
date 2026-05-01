@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,6 +11,7 @@
     <ProjectReference Include="..\CondoNet.Financial.Core\CondoNet.Financial.Core.csproj" />
     <ProjectReference Include="..\CondoNet.BlockChain.Core\CondoNet.BlockChain.Core.csproj" />
     <ProjectReference Include="..\CondoNet.BlockChain.Infrastructure\CondoNet.BlockChain.Infrastructure.csproj" />
+    <ProjectReference Include="..\CondoNet.Shared\CondoNet.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

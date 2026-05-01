@@ -5,16 +5,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CondoNet.Financial.Infrastructure.Repositories;
 
-public class CondoExpenseRepository : ICondoExpenseRepository
+public class CondoExpenseRepository(FinancialDbContext context) : ICondoExpenseRepository
 {
-    private readonly FinancialDbContext _context;
-    public CondoExpenseRepository(FinancialDbContext context)
-    {
-        _context = context;
-    }
+    private readonly FinancialDbContext _context = context;
 
-    public async Task<CondoExpense?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => await _context.CondoExpenses.FindAsync(new object[] { id }, cancellationToken);
+    public async Task<CondoExpense> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => await _context.CondoExpenses.FindAsync([id], cancellationToken);
 
     public async Task<IEnumerable<CondoExpense>> GetByPeriodAsync(int month, int year, CancellationToken cancellationToken = default)
         => await _context.CondoExpenses.Where(e => e.Month == month && e.Year == year).ToListAsync(cancellationToken);
