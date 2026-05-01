@@ -31,4 +31,8 @@
     <ProjectReference Include="..\CondoNet.Asset.Infraestructure\CondoNet.Asset.Infraestructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Logs\" />
+  </ItemGroup>
+
 </Project>

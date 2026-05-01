@@ -27,7 +27,10 @@ RUN dotnet publish "./CondoNet.Payment.Api.csproj" -c $BUILD_CONFIGURATION -o /a
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "CondoNet.Payment.Api.dll"]
+# Copia el script wait-for-it.sh antes del ENTRYPOINT
+COPY wait-for-it.sh ./wait-for-it.sh
+RUN chmod +x ./wait-for-it.sh
+ENTRYPOINT ["./wait-for-it.sh", "rabbitmq", "5672", "dotnet", "CondoNet.Payment.Api.dll"]
 # Copia el script wait-for-it.sh
 COPY /wait-for-it.sh ./wait-for-it.sh
 RUN chmod +x ./wait-for-it.sh
