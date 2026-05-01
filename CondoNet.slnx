@@ -24,6 +24,11 @@
     <Project Path="src/CondoNet.Booking.Core/CondoNet.Booking.Core.csproj" Id="c71d822e-74b5-4ef3-98c8-1ac5a6143c59" />
     <Project Path="src/CondoNet.Booking.Infrastructure/CondoNet.Booking.Infrastructure.csproj" Id="f0280611-504a-4ec5-9dc6-e3bc8d2a281d" />
   </Folder>
+  <Folder Name="/src/Engagement Service/">
+    <Project Path="src/CondoNet.Engagement.Api/CondoNet.Engagement.Api.csproj" Id="861eb040-de12-4889-87e7-909ccfc59a80" />
+    <Project Path="src/CondoNet.Engagement.Core/CondoNet.Engagement.Core.csproj" Id="022bf1b5-4551-438e-9c9e-65928c0f3dbb" />
+    <Project Path="src/CondoNet.Engagement.Infrastructure/CondoNet.Engagement.Infrastructure.csproj" Id="d6ddca83-a6a1-4379-ae8b-560a8aa7736f" />
+  </Folder>
   <Folder Name="/src/Financial Service/">
     <Project Path="src/CondoNet.Financial.Api/CondoNet.Financial.Api.csproj" Id="d470a0bb-41f2-40c9-a7a9-1531aa8d1925" />
     <Project Path="src/CondoNet.Financial.Core/CondoNet.Financial.Core.csproj" Id="c8deeaa6-9dda-471b-a417-f2d7f98ec563" />
