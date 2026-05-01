@@ -27,7 +27,11 @@ RUN dotnet publish "./CondoNet.Financial.Api.csproj" -c $BUILD_CONFIGURATION -o 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-# Copia el script wait-for-it.sh antes del ENTRYPOINT
+
+# Copia el script desde el contexto raíz y da permisos de ejecución
+COPY wait-for-it.sh ./wait-for-it.sh
+RUN ls -l ./wait-for-it.sh
+RUN chmod +x ./wait-for-it.sh
 COPY wait-for-it.sh ./wait-for-it.sh
 RUN chmod +x ./wait-for-it.sh
 USER $APP_UID
