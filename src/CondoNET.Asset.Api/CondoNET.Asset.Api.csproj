@@ -28,7 +28,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CondoNet.Asset.Infraestructure\CondoNet.Asset.Infraestructure.csproj" />
+    <ProjectReference Include="..\CondoNet.Asset.Infraestructure\CondoNet.Asset.Infrastructure.csproj" />
+    <ProjectReference Include="..\CondoNet.Engagement.Infrastructure\CondoNet.Engagement.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

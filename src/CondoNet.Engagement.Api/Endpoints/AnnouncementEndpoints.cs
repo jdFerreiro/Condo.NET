@@ -34,6 +34,7 @@ public static class AnnouncementEndpoints
 
     private static Guid GetUserId(HttpContext ctx)
     {
+        ArgumentNullException.ThrowIfNull(ctx);
         // Implementar obtención de usuario autenticado
         return Guid.NewGuid(); // Placeholder
     }

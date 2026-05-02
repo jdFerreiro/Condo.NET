@@ -1,18 +1,12 @@
 using CondoNet.Engagement.Core.Entities;
 using CondoNet.Engagement.Core.Repositories;
-using System;
-using System.Threading.Tasks;
+using CondoNet.Engagement.Core.Services;
 
-namespace CondoNet.Engagement.Core.Services
+namespace CondoNet.Engagement.Infrastructure.Services
 {
-    public class AnnouncementService : IAnnouncementService
+    public class AnnouncementService(IAnnouncementRepository announcementRepository) : IAnnouncementService
     {
-        private readonly IAnnouncementRepository _announcementRepository;
-
-        public AnnouncementService(IAnnouncementRepository announcementRepository)
-        {
-            _announcementRepository = announcementRepository;
-        }
+        private readonly IAnnouncementRepository _announcementRepository = announcementRepository;
 
         public async Task ValidateAndCreateAsync(Announcement announcement, Guid userId)
         {
@@ -33,9 +27,7 @@ namespace CondoNet.Engagement.Core.Services
 
         public async Task ValidateAndUpdateAsync(Announcement announcement, Guid userId)
         {
-            var existing = await _announcementRepository.GetByIdAsync(announcement.Id);
-            if (existing == null)
-                throw new InvalidOperationException("El anuncio no existe.");
+            var existing = await _announcementRepository.GetByIdAsync(announcement.Id) ?? throw new InvalidOperationException("El anuncio no existe.");
 
             // Validar permisos (solo el creador o admin, por ejemplo)
             if (existing.CreatedBy != userId)
@@ -50,9 +42,7 @@ namespace CondoNet.Engagement.Core.Services
 
         public async Task ValidateAndDeleteAsync(Guid announcementId, Guid userId)
         {
-            var existing = await _announcementRepository.GetByIdAsync(announcementId);
-            if (existing == null)
-                throw new InvalidOperationException("El anuncio no existe.");
+            var existing = await _announcementRepository.GetByIdAsync(announcementId) ?? throw new InvalidOperationException("El anuncio no existe.");
 
             // Validar permisos (solo el creador o admin, por ejemplo)
             if (existing.CreatedBy != userId)

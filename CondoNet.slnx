@@ -8,7 +8,7 @@
   <Folder Name="/src/Asset Service/">
     <Project Path="src/CondoNET.Asset.Api/CondoNet.Asset.Api.csproj" />
     <Project Path="src/CondoNet.Asset.Core/CondoNet.Asset.Core.csproj" />
-    <Project Path="src/CondoNet.Asset.Infraestructure/CondoNet.Asset.Infraestructure.csproj" />
+    <Project Path="src/CondoNet.Asset.Infraestructure/CondoNet.Asset.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Authentication Service/">
     <Project Path="src/CondoNet.Auth.Api/CondoNet.Auth.Api.csproj" Id="c57c8f12-3091-4a8d-8053-c4b864c62e04" />

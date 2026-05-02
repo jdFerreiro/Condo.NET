@@ -1,9 +1,10 @@
 using CondoNet.Engagement.Core.Entities;
 using CondoNet.Engagement.Core.Repositories;
+using CondoNet.Engagement.Core.Services;
 using System;
 using System.Threading.Tasks;
 
-namespace CondoNet.Engagement.Core.Services
+namespace CondoNet.Engagement.Infrastructure.Services
 {
     public class NotificationService : INotificationService
     {
