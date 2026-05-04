@@ -9,9 +9,11 @@ public static class AccountingEndpoints
     {
         var group = app.MapGroup("/accounting");
 
-        group.MapPost("/transactions", async (AccountingTransaction transaction, IAccountingAutomatonService automaton, HttpContext ctx) =>
+        group.MapPost("/transactions", async (AccountingTransaction transaction, IAccountingAutomatonService automaton, CondoNet.Shared.Interfaces.ITenantService tenantService, HttpContext ctx) =>
         {
             var userId = GetUserId(ctx);
+            transaction.OrganizationId = tenantService.GetOrganizationId();
+            transaction.CondominiumId = tenantService.GetCondominiumId();
             await automaton.ProcessTransactionAsync(transaction, userId);
             return Results.Created($"/accounting/transactions/{transaction.Id}", transaction);
         });

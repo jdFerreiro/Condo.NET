@@ -5,10 +5,10 @@
   <Folder Name="/src/">
     <Project Path="src/CondoNet.Shared/CondoNet.Shared.csproj" Id="d2330135-344e-49ad-82c4-df75645a83f9" />
   </Folder>
-  <Folder Name="/src/Accountig Service/">
-    <Project Path="src/CondoNet.Accountig.Api/CondoNet.Accountig.Api.csproj" Id="bbb8d7e3-70bb-4013-b5d0-029ac82c8065" />
-    <Project Path="src/CondoNet.Accountig.Core/CondoNet.Accountig.Core.csproj" Id="6a4397e1-6ed5-4534-ad32-72f2e3a0ce96" />
-    <Project Path="src/CondoNet.Accountig.Infrastructure/CondoNet.Accountig.Infrastructure.csproj" Id="e856db05-175a-4682-82e8-c8902b412158" />
+  <Folder Name="/src/Accounting Service/">
+    <Project Path="src/CondoNet.Accounting.Api/CondoNet.Accounting.Api.csproj" />
+    <Project Path="src/CondoNet.Accounting.Core/CondoNet.Accounting.Core.csproj" />
+    <Project Path="src/CondoNet.Accounting.Infrastructure/CondoNet.Accounting.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Asset Service/">
     <Project Path="src/CondoNET.Asset.Api/CondoNet.Asset.Api.csproj" />

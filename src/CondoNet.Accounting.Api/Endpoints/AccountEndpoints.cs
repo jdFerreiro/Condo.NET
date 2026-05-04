@@ -10,8 +10,11 @@ public static class AccountEndpoints
     {
         var group = app.MapGroup("/accounts");
 
-        group.MapGet("/", async (Guid organizationId, Guid condominiumId, IAccountRepository repo) =>
+
+        group.MapGet("/", async (IAccountRepository repo, CondoNet.Shared.Interfaces.ITenantService tenantService) =>
         {
+            var organizationId = tenantService.GetOrganizationId();
+            var condominiumId = tenantService.GetCondominiumId();
             var accounts = await repo.GetAllAsync(organizationId, condominiumId);
             return Results.Ok(accounts);
         });
@@ -22,8 +25,11 @@ public static class AccountEndpoints
             return account is not null ? Results.Ok(account) : Results.NotFound();
         });
 
-        group.MapPost("/", async (Account account, IAccountRepository repo) =>
+
+        group.MapPost("/", async (Account account, IAccountRepository repo, CondoNet.Shared.Interfaces.ITenantService tenantService) =>
         {
+            account.OrganizationId = tenantService.GetOrganizationId();
+            account.CondominiumId = tenantService.GetCondominiumId();
             await repo.AddAsync(account);
             return Results.Created($"/accounts/{account.Id}", account);
         });
