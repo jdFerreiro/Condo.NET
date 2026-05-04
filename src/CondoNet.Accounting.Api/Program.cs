@@ -63,6 +63,8 @@ try
     builder.Services.AddMassTransit(x =>
     {
         x.AddConsumer<InvoicePaidEventConsumer>();
+        x.AddConsumer<InvoiceRegisteredEventConsumer>();
+        x.AddConsumer<CondoCreatedEventConsumer>();
         x.UsingRabbitMq((context, cfg) =>
         {
             var rabbitConfig = builder.Configuration.GetSection("RabbitMQ");
