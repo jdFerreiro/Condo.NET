@@ -1,6 +1,7 @@
 using CondoNet.Accounting.Api.Endpoints;
 using CondoNet.Accounting.Core.Repositories;
 using CondoNet.Accounting.Core.Services;
+using CondoNet.Accounting.Infrastructure.Consumers;
 using CondoNet.Accounting.Infrastructure.Persistence;
 using CondoNet.Accounting.Infrastructure.Repositories;
 using CondoNet.Accounting.Infrastructure.Services;
@@ -57,7 +58,22 @@ try
     var rabbitMqSettings = builder.Configuration.GetSection("RabbitMQ").Get<RabbitMqSettings>()
         ?? throw new InvalidOperationException("RabbitMQ no configurado.");
 
-    // 2. Base de Datos
+
+    // MassTransit y RabbitMQ
+    builder.Services.AddMassTransit(x =>
+    {
+        x.AddConsumer<InvoicePaidEventConsumer>();
+        x.UsingRabbitMq((context, cfg) =>
+        {
+            var rabbitConfig = builder.Configuration.GetSection("RabbitMQ");
+            cfg.Host(rabbitConfig["Host"], rabbitConfig["VirtualHost"], h =>
+            {
+                h.Username(rabbitConfig["Username"]);
+                h.Password(rabbitConfig["Password"]);
+            });
+            cfg.ConfigureEndpoints(context);
+        });
+    });
     builder.Services.AddDbContext<AccountingDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
         b => b.MigrationsAssembly("CondoNet.Accounting.Infrastructure")));
