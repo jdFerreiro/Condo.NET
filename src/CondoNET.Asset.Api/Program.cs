@@ -1,9 +1,7 @@
 using CondoNet.Asset.Api.Endpoints;
-using CondoNet.Engagement.Core.Repositories;
-using CondoNet.Engagement.Core.Services;
-using CondoNet.Engagement.Infrastructure.Persistence;
-using CondoNet.Engagement.Infrastructure.Repositories;
-using CondoNet.Engagement.Infrastructure.Services;
+using CondoNet.Asset.Core.Interfaces;
+using CondoNet.Asset.Infrastructure.Persistence;
+using CondoNet.Asset.Infrastructure.Services;
 using CondoNet.Shared.Interfaces;
 using CondoNet.Shared.Middleware;
 using CondoNet.Shared.Services;
@@ -25,7 +23,7 @@ Log.Logger = new LoggerConfiguration()
 try
 {
 
-    Log.Information("Iniciando el microservicio Engagement Service de CondoNET...");
+    Log.Information("Iniciando el microservicio Asset Service de CondoNET...");
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -59,38 +57,24 @@ try
         ?? throw new InvalidOperationException("RabbitMQ no configurado.");
 
     // 2. Base de Datos
-    builder.Services.AddDbContext<EngagementDbContext>(options =>
+    builder.Services.AddDbContext<AssetDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
-        b => b.MigrationsAssembly("CondoNet.Engagement.Infrastructure")));
+        b => b.MigrationsAssembly("CondoNet.Asset.Infrastructure")));
 
     builder.Services.AddHttpContextAccessor();
 
     // 3. Inyección de Dependencias
-    // Repositorios
-    builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
-    builder.Services.AddScoped<IDigitalSignatureRepository, DigitalSignatureRepository>();
-    builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
-    builder.Services.AddScoped<IQuorumRepository, QuorumRepository>();
-    builder.Services.AddScoped<ISurveyRepository, SurveyRepository>();
-    builder.Services.AddScoped<IVoteRepository, VoteRepository>();
-
-
     // Servicios
     builder.Services.AddScoped<ITenantService, TenantService>();
-    builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
-    builder.Services.AddScoped<IDigitalSignatureService, DigitalSignatureService>();
-    builder.Services.AddScoped<INotificationService, NotificationService>();
-    builder.Services.AddScoped<IQuorumService, QuorumService>();
-    builder.Services.AddScoped<ISurveyService, SurveyService>();
-    builder.Services.AddScoped<IVoteService, VoteService>();
-
+    builder.Services.AddScoped<IAssetService, AssetService>();
+    builder.Services.AddScoped<IUnitService, UnitService>();
 
     // 4. OpenAPI / Swagger
     builder.Services.AddOpenApi();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(s =>
     {
-        s.SwaggerDoc("v1", new OpenApiInfo { Title = "CondoNet Engagement API", Version = "v1" });
+        s.SwaggerDoc("v1", new OpenApiInfo { Title = "CondoNet Asset API", Version = "v1" });
 
         // Configuración de Seguridad en Swagger
         s.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -160,7 +144,7 @@ try
     builder.Services.AddAuthorizationBuilder()
         .AddPolicy("RequireAdminRole", policy =>
             policy.RequireRole("ADMIN"))
-        .AddPolicy("RequireEngagementRole", p => p.RequireRole("ADMIN", "EngagementManager"))
+        .AddPolicy("RequireAssetRole", p => p.RequireRole("ADMIN", "AssetManager"))
         .AddPolicy("RequiredAnyRole", p => p.RequireRole("ADMIN", "Manager", "User"));
 
     builder.Services.AddHttpClient("AuthService")
@@ -181,7 +165,7 @@ try
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "CondoNet Engagement API V1");
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "CondoNet Asset API V1");
             c.RoutePrefix = string.Empty;
         });
     }
@@ -216,17 +200,18 @@ try
     app.UseMiddleware<ApiKeyMiddleware>();
 
     // 4. Mapeo de Minimal APIs
+    app.MapAssetEndpoints();
+    app.MapCommonAssetEndpoints();
     app.MapCondominiumEndpoints();
+    app.MapCriticalEquipmentEndpoints();
     app.MapTowerEndpoints();
     app.MapUnitEndpoints();
-    app.MapCommonAssetEndpoints();
-    app.MapCriticalEquipmentEndpoints();
 
     app.Run();
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Engagement service falló en el arranque.");
+    Log.Fatal(ex, "Asset service falló en el arranque.");
 }
 finally
 {
