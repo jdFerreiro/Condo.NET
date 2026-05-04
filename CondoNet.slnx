@@ -38,7 +38,10 @@
     <Project Path="src/CondoNet.Financial.Api/CondoNet.Financial.Api.csproj" Id="d470a0bb-41f2-40c9-a7a9-1531aa8d1925" />
     <Project Path="src/CondoNet.Financial.Core/CondoNet.Financial.Core.csproj" Id="c8deeaa6-9dda-471b-a417-f2d7f98ec563" />
     <Project Path="src/CondoNet.Financial.Infrastructure/CondoNet.Financial.Infrastructure.csproj" />
-    <Project Path="src/CondoNET.Financial.Worker/CondoNET.Financial.Worker.csproj" DisplayName="CondoNet.Financial.Worker" Id="e6380701-652e-452b-b73e-2393959686ee" />
+    <Project Path="src/CondoNET.Financial.Worker/CondoNET.Financial.Worker.csproj" Id="e6380701-652e-452b-b73e-2393959686ee" />
+  </Folder>
+  <Folder Name="/src/Gateway/">
+    <Project Path="src/CondoNet.Gateway.Api/CondoNet.Gateway.Api.csproj" Id="22c2f5e6-bc36-4810-8c48-926d4dbdb567" />
   </Folder>
   <Folder Name="/src/Payment Service/">
     <Project Path="src/CondoNet.Payment.Api/CondoNet.Payment.Api.csproj" Id="533f73b0-a5bc-4ec6-8027-13ad13ec756f" />
