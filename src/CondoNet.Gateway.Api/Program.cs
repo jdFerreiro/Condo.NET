@@ -1,4 +1,3 @@
-
 using CondoNet.BlockChain.Core;
 using CondoNet.Shared.Settings;
 using Microsoft.Extensions.Options;
@@ -8,6 +7,11 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(80); // HTTP
+    options.ListenAnyIP(443, listenOptions => listenOptions.UseHttps()); // HTTPS
+});
 
 // Configuración de Redis
 builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
@@ -46,10 +50,7 @@ builder.Services.AddReverseProxy()
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+app.MapOpenApi();
 
 app.UseHttpsRedirection();
 
