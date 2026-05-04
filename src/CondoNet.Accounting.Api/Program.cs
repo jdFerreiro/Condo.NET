@@ -59,23 +59,6 @@ try
         ?? throw new InvalidOperationException("RabbitMQ no configurado.");
 
 
-    // MassTransit y RabbitMQ
-    builder.Services.AddMassTransit(x =>
-    {
-        x.AddConsumer<InvoicePaidEventConsumer>();
-        x.AddConsumer<InvoiceRegisteredEventConsumer>();
-        x.AddConsumer<CondoCreatedEventConsumer>();
-        x.UsingRabbitMq((context, cfg) =>
-        {
-            var rabbitConfig = builder.Configuration.GetSection("RabbitMQ");
-            cfg.Host(rabbitConfig["Host"], rabbitConfig["VirtualHost"], h =>
-            {
-                h.Username(rabbitConfig["Username"]);
-                h.Password(rabbitConfig["Password"]);
-            });
-            cfg.ConfigureEndpoints(context);
-        });
-    });
     builder.Services.AddDbContext<AccountingDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
         b => b.MigrationsAssembly("CondoNet.Accounting.Infrastructure")));
@@ -129,6 +112,9 @@ try
     // 5. MassTransit con RabbitMQ (Simplificado)
     builder.Services.AddMassTransit(x =>
     {
+        x.AddConsumer<InvoicePaidEventConsumer>();
+        x.AddConsumer<InvoiceRegisteredEventConsumer>();
+        x.AddConsumer<CondoCreatedEventConsumer>();
         x.UsingRabbitMq((context, cfg) =>
         {
             // Usamos solo el nombre del host (localhost o rabbitmq)
