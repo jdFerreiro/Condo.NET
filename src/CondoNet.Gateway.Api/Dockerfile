@@ -2,7 +2,6 @@
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
@@ -27,4 +26,15 @@ RUN dotnet publish "./CondoNet.Gateway.Api.csproj" -c $BUILD_CONFIGURATION -o /a
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "CondoNet.Gateway.Api.dll"]
+# Volvemos a root para asegurar la copia con permisos
+USER root
+
+# Copiamos con el permiso de ejecución ya asignado y limpiamos el formato Windows
+COPY --chmod=755 wait-for-it.sh ./wait-for-it.sh
+RUN sed -i 's/\r$//' ./wait-for-it.sh
+
+# Cambiamos al usuario de la aplicación
+USER $APP_UID
+
+# Importante: Usa el nombre correcto del servicio RabbitMQ (según tu imagen anterior es condonet_rabbitmq)
+ENTRYPOINT ["./wait-for-it.sh", "condonet_rabbitmq:5673", "--", "dotnet", "CondoNet.Gateway.Api.dll"]

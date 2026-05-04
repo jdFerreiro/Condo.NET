@@ -40,7 +40,7 @@
     <Project Path="src/CondoNet.Financial.Infrastructure/CondoNet.Financial.Infrastructure.csproj" />
     <Project Path="src/CondoNET.Financial.Worker/CondoNET.Financial.Worker.csproj" Id="e6380701-652e-452b-b73e-2393959686ee" />
   </Folder>
-  <Folder Name="/src/Gateway/">
+  <Folder Name="/src/Gateway Service/">
     <Project Path="src/CondoNet.Gateway.Api/CondoNet.Gateway.Api.csproj" Id="22c2f5e6-bc36-4810-8c48-926d4dbdb567" />
   </Folder>
   <Folder Name="/src/Payment Service/">
