@@ -1,6 +1,15 @@
 services:
   # --- INFRAESTRUCTURA ---
   # Base de datos exclusiva para Auth
+  redis:
+    image: redis:7-alpine
+    container_name: condonet_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
   db.auth:
     image: postgres:15-alpine
     container_name: condonet.db.auth
@@ -115,8 +124,8 @@ services:
       - db.auth
       - rabbitmq
     ports:
-      - "8080:80"
-      - "8081:443"
+      - "8180:80"
+      - "8181:443"
     volumes:
       - ./logs/auth:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
     
@@ -140,8 +149,8 @@ services:
       - db.asset
       - rabbitmq
     ports:
-      - "8180:80"
-      - "8181:443"
+      - "8280:80"
+      - "8281:443"
     volumes:
       - ./logs/asset:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
 
@@ -165,8 +174,8 @@ services:
       - db.financial
       - rabbitmq
     ports:
-      - "8280:80"
-      - "8281:443"
+      - "8380:80"
+      - "8381:443"
     volumes:
       - ./logs/financial:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
 
@@ -187,11 +196,12 @@ services:
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
     depends_on:
-      - db.booking  
+      - redis
+      - db.booking
       - rabbitmq
     ports:
-      - "8380:80"
-      - "8381:443"
+      - "8480:80"
+      - "8481:443"
     volumes:
       - ./logs/booking:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
  
@@ -215,8 +225,8 @@ services:
       - db.engagement  
       - rabbitmq
     ports:
-      - "8480:80"
-      - "8481:443"
+      - "8580:80"
+      - "8581:443"
     volumes:
       - ./logs/engagement:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
  
@@ -240,12 +250,34 @@ services:
       - db.accounting  
       - rabbitmq
     ports:
-      - "8580:80"
-      - "8581:443"
+      - "8680:80"
+      - "8681:443"
     volumes:
       - ./logs/accounting:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
 
-
+  gateway-service:
+    build:
+      context: .
+      dockerfile: src/CondoNet.Gateway.Api/Dockerfile
+    container_name: condonet_gateway
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - JwtSettings__Secret=${JWT_SECRET}
+      - JwtSettings__Issuer=${JWT_ISSUER}
+      - JwtSettings__Audience=${JWT_AUDIENCE}
+      - RabbitMQ__Host=${RABBITMQ_DEFAULT_HOST}
+      - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
+      - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+    depends_on:
+      - redis
+      - rabbitmq
+    ports:
+      - "8080:80"
+      - "8081:443"
+    volumes:
+      - ./logs/gateway:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
 
 volumes:
   pgdata:
@@ -255,3 +287,4 @@ volumes:
   booking_db_data: # Y este para el de booking
   engagement_db_data: # Y este para el de engagement
   accounting_db_data: # Y este para el de accounting
+  redis_data:
