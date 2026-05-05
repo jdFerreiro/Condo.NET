@@ -37,7 +37,9 @@ USER root
 COPY --chmod=755 wait-for-it.sh ./wait-for-it.sh
 RUN sed -i 's/\r$//' ./wait-for-it.sh
 
-# Cambiamos al usuario de la aplicación
+
+# Crear directorio para certificados y copiar el certificado (el volumen lo monta el host)
+RUN mkdir -p /https
 USER $APP_UID
 
 # Importante: Usa el nombre correcto del servicio RabbitMQ (según tu imagen anterior es condonet_rabbitmq)

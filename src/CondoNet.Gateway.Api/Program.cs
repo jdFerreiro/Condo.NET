@@ -9,8 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(80); // HTTP
-    options.ListenAnyIP(443, listenOptions => listenOptions.UseHttps()); // HTTPS
+    options.ListenAnyIP(80); // Solo HTTP
+    // Elimina o comenta la línea de HTTPS
+    // options.ListenAnyIP(443, listenOptions => listenOptions.UseHttps());
 });
 
 // Configuración de Redis
@@ -52,6 +53,6 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 app.MapOpenApi();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.Run();

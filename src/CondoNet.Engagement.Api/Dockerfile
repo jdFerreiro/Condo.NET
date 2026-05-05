@@ -32,6 +32,10 @@ USER root
 COPY --chmod=755 wait-for-it.sh ./wait-for-it.sh
 RUN sed -i 's/\r$//' ./wait-for-it.sh
 
+
+# Crear directorio para certificados y copiar el certificado (el volumen lo monta el host)
+RUN mkdir -p /https
+
 # Cambiamos al usuario de la aplicación
 USER $APP_UID
 

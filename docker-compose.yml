@@ -120,6 +120,8 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
       - db.auth
       - rabbitmq
@@ -127,7 +129,8 @@ services:
       - "8180:80"
       - "8181:443"
     volumes:
-      - ./logs/auth:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
+      - ./logs/auth:/app/Logs
+      - ${USERPROFILE}/.aspnet/https:/https:ro
     
   assets-service:
     build:
@@ -145,6 +148,8 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
       - db.asset
       - rabbitmq
@@ -152,8 +157,9 @@ services:
       - "8280:80"
       - "8281:443"
     volumes:
-      - ./logs/asset:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
-
+      - ./logs/asset:/app/Logs
+      - ${USERPROFILE}/.aspnet/https:/https:ro
+ 
   financial-service:
     build:
       context: .
@@ -170,6 +176,8 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
       - db.financial
       - rabbitmq
@@ -177,7 +185,8 @@ services:
       - "8380:80"
       - "8381:443"
     volumes:
-      - ./logs/financial:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
+      - ./logs/financial:/app/Logs
+      - ${USERPROFILE}/.aspnet/https:/https:ro
 
   booking-service:
     build:
@@ -195,6 +204,8 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
       - redis
       - db.booking
@@ -203,7 +214,8 @@ services:
       - "8480:80"
       - "8481:443"
     volumes:
-      - ./logs/booking:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
+      - ./logs/booking:/app/Logs
+      - ${USERPROFILE}/.aspnet/https:/https:ro
  
   engagement-service:
     build:
@@ -221,14 +233,17 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
-      - db.engagement  
+      - db.engagement
       - rabbitmq
     ports:
       - "8580:80"
       - "8581:443"
     volumes:
-      - ./logs/engagement:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
+      - ./logs/engagement:/app/Logs
+      - ${USERPROFILE}/.aspnet/https:/https:ro
  
   accounting-service:
     build:
@@ -246,6 +261,8 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
       - db.accounting  
       - rabbitmq
@@ -253,7 +270,8 @@ services:
       - "8680:80"
       - "8681:443"
     volumes:
-      - ./logs/accounting:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
+      - ./logs/accounting:/app/Logs
+      - ${USERPROFILE}/.aspnet/https:/https:ro
 
   gateway-service:
     build:
@@ -270,6 +288,8 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
+      - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
       - redis
       - rabbitmq
@@ -277,7 +297,8 @@ services:
       - "8080:80"
       - "8081:443"
     volumes:
-      - ./logs/gateway:/app/Logs # Mapea la carpeta de logs del contenedor a tu PC
+      - ./logs/gateway:/app/Logs
+      - ${USERPROFILE}/.aspnet/https:/https:ro
 
 volumes:
   pgdata:
