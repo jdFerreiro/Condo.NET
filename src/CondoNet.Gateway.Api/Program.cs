@@ -7,12 +7,12 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(80); // Solo HTTP
-    // Elimina o comenta la línea de HTTPS
-    // options.ListenAnyIP(443, listenOptions => listenOptions.UseHttps());
-});
+// builder.WebHost.ConfigureKestrel(options =>
+// {
+//     options.ListenAnyIP(80); // Solo HTTP
+//     // Elimina o comenta la línea de HTTPS
+//     // options.ListenAnyIP(443, listenOptions => listenOptions.UseHttps());
+// });
 
 // Configuración de Redis
 builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
@@ -54,5 +54,12 @@ var app = builder.Build();
 app.MapOpenApi();
 
 //app.UseHttpsRedirection();
+
+
+// Endpoint básico para verificar que el gateway está activo
+app.MapGet("/", () => "Gateway activo");
+
+// Endpoint de health check
+app.MapGet("/health", () => Results.Ok("Healthy"));
 
 app.Run();
