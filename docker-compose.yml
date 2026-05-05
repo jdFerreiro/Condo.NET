@@ -1,5 +1,26 @@
 services:
   # --- INFRAESTRUCTURA ---
+
+  # Accceso a RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: condonet_rabbitmq
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_VHOST: /
+      RABBITMQ_DEFAULT_HOST: ${RABBITMQ_DEFAULT_HOST}
+      RABBITMQ_DEFAULT_PORT: ${RABBITMQ_DEFAULT_PORT}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   # Base de datos exclusiva para Auth
   redis:
     image: redis:7-alpine
@@ -101,21 +122,6 @@ services:
       - payment_db_data:/var/lib/postgresql/data
 
 
-  # Accceso a RabbitMQ
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: condonet_rabbitmq
-    ports:
-      - "5673:5672"
-      - "15673:15672"
-    restart: always
-    environment:
-      RABBITMQ_DEFAULT_VHOST: /
-      RABBITMQ_DEFAULT_HOST: ${RABBITMQ_DEFAULT_HOST}
-      RABBITMQ_DEFAULT_PORT: ${RABBITMQ_DEFAULT_PORT}
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
-
   # --- MICROSERVICIOS ---
   auth-service:
     build:
@@ -136,8 +142,10 @@ services:
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
-      - db.auth
-      - rabbitmq
+      db.auth:
+         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     ports:
       - "8180:80"
       - "8181:443"
@@ -164,8 +172,10 @@ services:
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
-      - db.asset
-      - rabbitmq
+      db.asset:
+         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     ports:
       - "8280:80"
       - "8281:443"
@@ -192,8 +202,10 @@ services:
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
-      - db.financial
-      - rabbitmq
+      db.financial:
+         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     ports:
       - "8380:80"
       - "8381:443"
@@ -220,9 +232,12 @@ services:
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
-      - redis
-      - db.booking
-      - rabbitmq
+      redis:
+        condition: service_started
+      db.booking:
+         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     ports:
       - "8480:80"
       - "8481:443"
@@ -249,8 +264,10 @@ services:
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
-      - db.engagement
-      - rabbitmq
+      db.engagement:
+         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     ports:
       - "8580:80"
       - "8581:443"
@@ -277,8 +294,10 @@ services:
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
-      - db.accounting  
-      - rabbitmq
+      db.accounting:
+         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     ports:
       - "8680:80"
       - "8681:443"
@@ -304,8 +323,10 @@ services:
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
-      - redis
-      - rabbitmq
+      redis:
+         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     ports:
       - "8080:80"
       - "8081:443"
@@ -332,8 +353,10 @@ services:
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
-      - db.payment  
-      - rabbitmq
+      db.payment:
+         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     ports:
       - "8780:80"
       - "8781:443"

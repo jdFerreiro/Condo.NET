@@ -3,9 +3,11 @@ using CondoNet.BlockChain.Infrastructure;
 using CondoNet.Payment.Api.Endpoints;
 using CondoNet.Payment.Api.Services;
 using CondoNet.Payment.Core.Repositories;
+using CondoNet.Payment.Core.Services;
 using CondoNet.Payment.Infrastructure.PaymentGateways;
 using CondoNet.Payment.Infrastructure.Persistence;
 using CondoNet.Payment.Infrastructure.Repositories;
+using CondoNet.Payment.Infrastructure.Services;
 using CondoNet.Shared.Interfaces;
 using CondoNet.Shared.Middleware;
 using CondoNet.Shared.Services;
@@ -186,6 +188,7 @@ try
     builder.Services.AddScoped<IPaymentReceiptRepository, PaymentReceiptRepository>();
     builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
     builder.Services.AddScoped<IWebhookEventRepository, WebhookEventRepository>();
+    builder.Services.AddScoped<IPaymentReceiptValidator, PaymentReceiptValidator>();
 
 
     var app = builder.Build();
@@ -233,6 +236,10 @@ try
 
     // 4. Mapeo de Minimal APIs
     app.MapReceiptValidationEndpoints();
+    app.MapPaymentEndpoints();
+    app.MapInvoiceEndpoints();
+    app.MapReceiptEndpoints();
+    app.MapWebhookEndpoints();
 
     app.Run();
 }
