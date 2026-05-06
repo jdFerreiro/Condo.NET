@@ -1,5 +1,4 @@
 using CondoNet.Payment.Infrastructure.PaymentGateways;
-using Microsoft.AspNetCore.Http;
 
 namespace CondoNet.Payment.Api.Endpoints;
 
@@ -42,6 +41,6 @@ public static class PaymentEndpoints
                 return Results.NotFound($"Pasarela '{gateway}' no registrada.");
             }
         })
-        .WithName("ProcessPayment");
+        .WithName("PaymentsProcess");
     }
 }

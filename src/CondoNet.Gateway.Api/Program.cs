@@ -7,13 +7,6 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// builder.WebHost.ConfigureKestrel(options =>
-// {
-//     options.ListenAnyIP(80); // Solo HTTP
-//     // Elimina o comenta la línea de HTTPS
-//     // options.ListenAnyIP(443, listenOptions => listenOptions.UseHttps());
-// });
-
 // Configuración de Redis
 builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
