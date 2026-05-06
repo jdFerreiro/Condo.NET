@@ -1,6 +1,6 @@
 ﻿using CondoNet.Financial.Core.Entities;
 
-namespace CondoNet.Financial.Core.Interfaces
+namespace CondoNet.Financial.Core.Services
 {
     public interface ICurrencyService
     {

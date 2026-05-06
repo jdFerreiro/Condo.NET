@@ -190,7 +190,6 @@ try
     builder.Services.AddScoped<IWebhookEventRepository, WebhookEventRepository>();
     builder.Services.AddScoped<IPaymentReceiptValidator, PaymentReceiptValidator>();
 
-
     var app = builder.Build();
 
     // Mapear endpoint de pagos
@@ -225,7 +224,7 @@ try
         }
     });
 
-    app.UseHttpsRedirection();
+    // app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
 

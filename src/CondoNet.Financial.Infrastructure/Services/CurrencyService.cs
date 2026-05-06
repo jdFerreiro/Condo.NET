@@ -1,7 +1,8 @@
 using CondoNet.Financial.Core.Entities;
 using CondoNet.Financial.Core.Interfaces;
+using CondoNet.Financial.Core.Services;
 
-namespace CondoNet.Financial.Core.Services;
+namespace CondoNet.Financial.Infrastructure.Services;
 
 public class CurrencyService(ICurrencyRateRepository currencyRateRepository,
     ICurrencyAdjustmentLogRepository adjustmentLogRepository) : ICurrencyService

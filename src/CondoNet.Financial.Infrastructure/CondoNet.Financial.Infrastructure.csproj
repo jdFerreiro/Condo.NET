@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CondoNet.Shared\CondoNet.Shared.csproj" />
     <ProjectReference Include="..\CondoNet.Financial.Core\CondoNet.Financial.Core.csproj" />
     <ProjectReference Include="..\CondoNet.BlockChain.Core\CondoNet.BlockChain.Core.csproj" />
     <ProjectReference Include="..\CondoNet.BlockChain.Infrastructure\CondoNet.BlockChain.Infrastructure.csproj" />

@@ -1,6 +1,7 @@
 using CondoNet.Financial.Core.Interfaces;
 using CondoNet.Financial.Core.Services;
 using CondoNet.Financial.Infrastructure.Repositories;
+using CondoNet.Financial.Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 

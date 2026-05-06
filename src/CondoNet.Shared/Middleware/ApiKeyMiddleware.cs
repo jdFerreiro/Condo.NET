@@ -19,30 +19,37 @@ namespace CondoNet.Shared.Middleware
         {
             try
             {
-                if (!context.Request.Headers.TryGetValue("X-Api-Key", out var extractedApiKey) || string.IsNullOrEmpty(extractedApiKey))
-                {
-                    context.Response.StatusCode = 401;
-                    await context.Response.WriteAsync("ApiKey faltante.");
-                    return;
-                }
+                var path = context.Request.Path.Value;
 
-                if (context.Request.Path.Value.Contains("apikeys/validate"))
+                // Permite el acceso sin ApiKey a Swagger y OpenAPI
+                if (!path.Contains("swagger", StringComparison.OrdinalIgnoreCase))
                 {
-                    context.Response.StatusCode = 200;
-                    return;
-                }
 
-                var client = _httpClientFactory.CreateClient("AuthService");
-                client.DefaultRequestHeaders.Clear();
-                client.DefaultRequestHeaders.Add("x-api-key", [.. extractedApiKey]);
-                string url = $"{_authServiceUrl}/api/auth/apikeys/validate?key={extractedApiKey}";
-                var response = await client.GetAsync(url);
+                    if (!context.Request.Headers.TryGetValue("X-Api-Key", out var extractedApiKey) || string.IsNullOrEmpty(extractedApiKey))
+                    {
+                        context.Response.StatusCode = 401;
+                        await context.Response.WriteAsync("ApiKey faltante.");
+                        return;
+                    }
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    context.Response.StatusCode = 401;
-                    await context.Response.WriteAsync("ApiKey inválida.");
-                    return;
+                    if (context.Request.Path.Value.Contains("apikeys/validate"))
+                    {
+                        context.Response.StatusCode = 200;
+                        return;
+                    }
+
+                    var client = _httpClientFactory.CreateClient("AuthService");
+                    client.DefaultRequestHeaders.Clear();
+                    client.DefaultRequestHeaders.Add("x-api-key", [.. extractedApiKey]);
+                    string url = $"{_authServiceUrl}/api/auth/apikeys/validate?key={extractedApiKey}";
+                    var response = await client.GetAsync(url);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        context.Response.StatusCode = 401;
+                        await context.Response.WriteAsync("ApiKey inválida.");
+                        return;
+                    }
                 }
 
                 await _next(context);

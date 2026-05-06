@@ -1,10 +1,12 @@
 using CondoNet.BlockChain.Core;
 using CondoNet.BlockChain.Infrastructure;
+using CondoNet.Financial.Api.Endpoints;
 using CondoNet.Financial.Core.Interfaces;
 using CondoNet.Financial.Core.Services;
 using CondoNet.Financial.Infrastructure.Consumers;
 using CondoNet.Financial.Infrastructure.Persistence;
 using CondoNet.Financial.Infrastructure.Repositories;
+using CondoNet.Financial.Infrastructure.Services;
 using CondoNet.Shared.Interfaces;
 using CondoNet.Shared.Middleware;
 using CondoNet.Shared.Services;
@@ -25,7 +27,6 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-
     Log.Information("Iniciando el microservicio Financial Service de CondoNET...");
 
     var builder = WebApplication.CreateBuilder(args);
@@ -44,7 +45,6 @@ try
         .CreateLogger();
 
     builder.Host.UseSerilog();
-
 
     builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
     builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ")); // Asegúrate que coincida con tu .env/appsettings
@@ -65,7 +65,6 @@ try
     var rabbitMqSettings = builder.Configuration.GetSection("RabbitMQ").Get<RabbitMqSettings>()
         ?? throw new InvalidOperationException("RabbitMQ no configurado.");
 
-
     // 2. Base de Datos
     builder.Services.AddDbContext<FinancialDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -81,10 +80,6 @@ try
             {
                 h.Username(rabbitMqSettings.Username);
                 h.Password(rabbitMqSettings.Password);
-            });
-            cfg.ReceiveEndpoint("invoice-paid-events", e =>
-            {
-                e.ConfigureConsumer<InvoicePaidConsumer>(context);
             });
         });
     });
@@ -167,6 +162,7 @@ try
         });
 
     // 8. Inyección de Dependencias para Servicios y Repositorios
+    // Repositories
     builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
     builder.Services.AddScoped<IBankTransactionRepository, BankTransactionRepository>();
     builder.Services.AddScoped<IBillingConfigurationRepository, BillingConfigurationRepository>();
@@ -190,14 +186,21 @@ try
     builder.Services.AddScoped<IUnitAccountRepository, UnitAccountRepository>();
     builder.Services.AddScoped<IUnitAccountSectionRepository, UnitAccountSectionRepository>();
 
+    // Services
+    builder.Services.AddScoped<IDataIntegrityValidatorService, DataIntegrityValidatorService>();
+    builder.Services.AddScoped<IBillingService, BillingService>();
+    builder.Services.AddScoped<ICurrencyService, CurrencyService>();
+    builder.Services.AddScoped<IFinancialService, FinancialService>();
+    builder.Services.AddScoped<IMerkleTreeService, MerkleTreeService>();
+
     var app = builder.Build();
 
     // 7. Pipeline de Middleware
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-    c.SwaggerEndpoint("/financial/swagger/v1/swagger.json", "CondoNet Financial API V1");
-    c.RoutePrefix = "swagger";
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CondoNet Financial API V1");
+        c.RoutePrefix = "swagger";
     });
 
     // Dentro de Program.cs antes de app.Run()
@@ -221,7 +224,7 @@ try
         }
     });
 
-    app.UseHttpsRedirection();
+    // app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -230,7 +233,9 @@ try
     app.UseMiddleware<ApiKeyMiddleware>();
 
     // 4. Mapeo de Minimal APIs
-    //app.MapCondominiumEndpoints();
+    app.MapBillingEndpoints();
+    app.MapFundEndpoints();
+    app.MapPaymentEndpoints();
 
     app.Run();
 }

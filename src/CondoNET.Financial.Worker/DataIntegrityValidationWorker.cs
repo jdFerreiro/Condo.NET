@@ -1,4 +1,5 @@
 using CondoNet.Financial.Core.Services;
+using CondoNet.Financial.Infrastructure.Services;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 

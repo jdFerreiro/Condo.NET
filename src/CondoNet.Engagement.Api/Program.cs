@@ -178,8 +178,8 @@ try
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-    c.SwaggerEndpoint("/engagement/swagger/v1/swagger.json", "CondoNet Engagement API V1");
-    c.RoutePrefix = "swagger";
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CondoNet Engagement API V1");
+        c.RoutePrefix = "swagger";
     });
 
     // Dentro de Program.cs antes de app.Run()
@@ -203,7 +203,7 @@ try
         }
     });
 
-    app.UseHttpsRedirection();
+    // app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
 

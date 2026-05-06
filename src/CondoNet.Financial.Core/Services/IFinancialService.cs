@@ -1,6 +1,6 @@
 ﻿using CondoNet.Shared.DTOs.Financial;
 
-namespace CondoNet.Financial.Core.Interfaces
+namespace CondoNet.Financial.Core.Services
 {
     public interface IFinancialService
     {

@@ -1,9 +1,9 @@
 using System.Security.Cryptography;
 using System.Text;
-using CondoNet.Financial.Core.Interfaces;
+using CondoNet.Financial.Core.Services;
 using CondoNet.Shared.DTOs.Financial;
 
-namespace CondoNet.Financial.Core.Services;
+namespace CondoNet.Financial.Infrastructure.Services;
 
 public class MerkleTreeService : IMerkleTreeService
 {

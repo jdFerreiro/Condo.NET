@@ -139,6 +139,7 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Https__Url=https://0.0.0.0:443
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:

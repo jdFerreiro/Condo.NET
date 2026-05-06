@@ -1,6 +1,5 @@
 using CondoNet.Accounting.Core.Entities;
 using CondoNet.Accounting.Core.Repositories;
-using CondoNet.Accounting.Core.Services;
 
 namespace CondoNet.Accounting.Api.Endpoints;
 
@@ -8,7 +7,8 @@ public static class AccountEndpoints
 {
     public static void MapAccountEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/accounts");
+        var group = app.MapGroup("/accounts")
+            .WithTags("Gestión de cuentas");
 
 
         group.MapGet("/", async (IAccountRepository repo, CondoNet.Shared.Interfaces.ITenantService tenantService) =>

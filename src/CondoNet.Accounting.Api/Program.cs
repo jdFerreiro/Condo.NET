@@ -25,7 +25,7 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-    Log.Information("Iniciando el microservicio Engagemet Service de CondoNET...");
+    Log.Information("Iniciando el microservicio Accounting Service de CondoNET...");
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -102,11 +102,13 @@ try
             Description = "Ingresa tu API Key en el header X-Api-Key"
         });
 
-        s.AddSecurityRequirement(d => new OpenApiSecurityRequirement
+        // Requiere ambos esquemas para todos los endpoints
+        s.AddSecurityRequirement(document => new OpenApiSecurityRequirement
         {
-            [new OpenApiSecuritySchemeReference("bearer", d)] = [],
-            [new OpenApiSecuritySchemeReference("ApiKey", d)] = []
+            [new OpenApiSecuritySchemeReference("bearer", document)] = [],
+            [new OpenApiSecuritySchemeReference("ApiKey", document)] = []
         });
+
     });
 
     // 5. MassTransit con RabbitMQ (Simplificado)
@@ -173,8 +175,8 @@ try
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-    c.SwaggerEndpoint("/accounting/swagger/v1/swagger.json", "CondoNet Accounting API V1");
-    c.RoutePrefix = "swagger";
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CondoNet Accounting API V1");
+        c.RoutePrefix = "swagger";
     });
 
     // Dentro de Program.cs antes de app.Run()
@@ -198,7 +200,7 @@ try
         }
     });
 
-    app.UseHttpsRedirection();
+    // app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
 

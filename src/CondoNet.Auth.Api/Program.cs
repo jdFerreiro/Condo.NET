@@ -153,7 +153,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/auth/swagger/v1/swagger.json", "CondoNet Auth API V1");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "CondoNet Auth API V1");
     c.RoutePrefix = "swagger";
 });
 
@@ -164,7 +164,7 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 

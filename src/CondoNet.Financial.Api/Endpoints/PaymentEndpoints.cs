@@ -1,7 +1,6 @@
 using CondoNet.Financial.Core.Interfaces;
-using CondoNet.Shared.DTOs.Financial;
-using Microsoft.AspNetCore.Http;
 using CondoNet.Financial.Core.Services;
+using CondoNet.Shared.DTOs.Financial;
 
 namespace CondoNet.Financial.Api.Endpoints;
 
@@ -9,7 +8,7 @@ public static class PaymentEndpoints
 {
     public static void MapPaymentEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/finance/payment", async (RegisterPaymentDto dto, FinancialService service) =>
+        app.MapPost("/api/finance/payment", async (RegisterPaymentDto dto, IFinancialService service) =>
         {
             await service.RegisterPaymentAsync(dto);
             return Results.Ok();

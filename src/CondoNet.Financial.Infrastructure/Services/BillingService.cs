@@ -1,8 +1,9 @@
-using CondoNet.Financial.Core.Interfaces;
-using CondoNet.Shared.DTOs.Financial;
 using CondoNet.BlockChain.Core;
+using CondoNet.Financial.Core.Interfaces;
+using CondoNet.Financial.Core.Services;
+using CondoNet.Shared.DTOs.Financial;
 
-namespace CondoNet.Financial.Core.Services;
+namespace CondoNet.Financial.Infrastructure.Services;
 
 
 
@@ -37,7 +38,7 @@ public class BillingService(
 
         // 2. Obtener todas las subsecciones involucradas
         var subSectionIds = expensesList.Select(e => e.FinancialSubSectionId).Distinct().ToList();
-        var allSubSections = new List<Entities.FinancialSubSection>();
+        var allSubSections = new List<Core.Entities.FinancialSubSection>();
         foreach (var subId in subSectionIds)
         {
             var sub = await _subSectionRepo.GetByIdAsync(subId, cancellationToken);
@@ -45,7 +46,7 @@ public class BillingService(
         }
 
         // 3. Obtener todas las unidades y sus asignaciones
-        var allAssignments = new List<Entities.UnitAccountSection>();
+        var allAssignments = new List<Core.Entities.UnitAccountSection>();
         foreach (var subId in subSectionIds)
         {
             var assignments = await _unitAccountSectionRepo.GetByFinancialSubSectionIdAsync(subId, cancellationToken);
@@ -53,7 +54,7 @@ public class BillingService(
         }
 
         var allUnitIds = allAssignments.Select(a => a.UnitAccountId).Distinct().ToList();
-        var allUnits = new List<Entities.UnitAccount>();
+        var allUnits = new List<Core.Entities.UnitAccount>();
         foreach (var unitId in allUnitIds)
         {
             var unit = await _unitAccountRepo.GetByIdAsync(unitId, cancellationToken);
@@ -74,7 +75,7 @@ public class BillingService(
 
             // Buscar todas las asignaciones de la unidad
             var unitAssignments = allAssignments.Where(a => a.UnitAccountId == unit.Id).ToList();
-            var invoiceItems = new List<Entities.InvoiceItem>();
+            var invoiceItems = new List<Core.Entities.InvoiceItem>();
             decimal totalAmount = 0m;
 
             foreach (var assignment in unitAssignments)
@@ -96,7 +97,7 @@ public class BillingService(
                     });
                     totalAmount += amount;
 
-                    invoiceItems.Add(new Entities.InvoiceItem
+                    invoiceItems.Add(new Core.Entities.InvoiceItem
                     {
                         Description = expense.Description,
                         Amount = amount,
@@ -113,12 +114,12 @@ public class BillingService(
             var invoice = invoices.FirstOrDefault(i => i.DueDate.Month == period.Month && i.DueDate.Year == period.Year);
             if (invoice == null)
             {
-                invoice = new Entities.Invoice
+                invoice = new Core.Entities.Invoice
                 {
                     UnitAccountId = unit.Id,
                     UnitAccount = unit,
                     DueDate = new DateTime(period.Year, period.Month, DateTime.DaysInMonth(period.Year, period.Month)),
-                    Status = Entities.InvoiceStatus.Pending,
+                    Status = Core.Entities.InvoiceStatus.Pending,
                     TotalAmount = totalAmount,
                     Number = $"{period:yyyyMM}-{unit.Id.ToString()[..8]}",
                     FechaEmision = DateTime.UtcNow,
@@ -143,7 +144,7 @@ public class BillingService(
         }
 
         // 6. Calcular Merkle Root de los gastos del periodo
-        var expenseDtos = expensesList.Select(e => new CondoNet.Shared.DTOs.Financial.ExpenseDto
+        var expenseDtos = expensesList.Select(e => new ExpenseDto
         {
             ExpenseId = e.Id.ToString(),
             Description = e.Description,
@@ -158,7 +159,7 @@ public class BillingService(
         var isValid = await _blockchainIntegrationService.ValidateMerkleRootAsync(merkleRoot, period, cancellationToken);
         if (!isValid)
         {
-            await _auditLogRepository.AddAsync(new Entities.AuditLog
+            await _auditLogRepository.AddAsync(new Core.Entities.AuditLog
             {
                 Action = "Inconsistencia Merkle Root",
                 EntityName = "Factura/Gasto",
@@ -173,7 +174,7 @@ public class BillingService(
         var anchorResult = await _blockchainIntegrationService.AnchorMerkleRootAsync(merkleRoot, period, cancellationToken);
         if (!anchorResult.Success)
         {
-            await _auditLogRepository.AddAsync(new Entities.AuditLog
+            await _auditLogRepository.AddAsync(new Core.Entities.AuditLog
             {
                 Action = "Error al anclar Merkle Root en blockchain",
                 EntityName = "Factura/Gasto",
@@ -196,7 +197,7 @@ public class BillingService(
         var subSection = await _subSectionRepo.GetByIdAsync(subSectionId, cancellationToken) ?? throw new InvalidOperationException("La subsección financiera no existe");
 
         // 2. Crear el gasto
-        var condoExpense = new Entities.CondoExpense
+        var condoExpense = new Core.Entities.CondoExpense
         {
             Description = expense.Description,
             Amount = expense.Amount,
@@ -235,12 +236,12 @@ public class BillingService(
             var invoice = invoices.FirstOrDefault(i => i.DueDate.Month == expense.Date.Month && i.DueDate.Year == expense.Date.Year);
             if (invoice == null)
             {
-                invoice = new Entities.Invoice
+                invoice = new Core.Entities.Invoice
                 {
                     UnitAccountId = unit.UnitAccountId,
                     UnitAccount = unitAccount,
                     DueDate = new DateTime(expense.Date.Year, expense.Date.Month, DateTime.DaysInMonth(expense.Date.Year, expense.Date.Month)),
-                    Status = Entities.InvoiceStatus.Pending,
+                    Status = Core.Entities.InvoiceStatus.Pending,
                     TotalAmount = 0m,
                     Number = $"{expense.Date:yyyyMM}-{unit.UnitAccountId.ToString()[..8]}"
                 };
@@ -248,7 +249,7 @@ public class BillingService(
             }
 
             // Crear el InvoiceItem
-            var item = new Entities.InvoiceItem
+            var item = new Core.Entities.InvoiceItem
             {
                 InvoiceId = invoice.Id,
                 Description = expense.Description,
@@ -317,10 +318,10 @@ public class BillingService(
         if (isAnchored)
         {
             // Auditoría real: registrar el intento
-            await _auditLogRepository.AddAsync(new Entities.AuditLog
+            await _auditLogRepository.AddAsync(new Core.Entities.AuditLog
             {
                 Action = "Intento de modificación de gasto anclado",
-                EntityName = nameof(Entities.CondoExpense),
+                EntityName = nameof(Core.Entities.CondoExpense),
                 EntityId = expenseId.ToString(),
                 UserName = "system", // Reemplazar por usuario real si está disponible
                 Details = $"Intento de modificar gasto anclado en blockchain. Descripción nueva: {updatedExpense.Description}, Monto nuevo: {updatedExpense.Amount}",

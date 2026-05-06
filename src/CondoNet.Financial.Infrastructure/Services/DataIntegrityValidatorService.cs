@@ -1,15 +1,16 @@
 using CondoNet.BlockChain.Core;
 using CondoNet.Financial.Core.Entities;
 using CondoNet.Financial.Core.Interfaces;
+using CondoNet.Financial.Core.Services;
 
-namespace CondoNet.Financial.Core.Services;
+namespace CondoNet.Financial.Infrastructure.Services;
 
 public class DataIntegrityValidatorService(
     IInvoiceRepository invoiceRepo,
     IBlockchainIntegrationService blockchainIntegrationService,
     IAuditLogRepository auditLogRepository,
     IUnitAccountRepository unitAccountRepo,
-    ITransactionRepository transactionRepo)
+    ITransactionRepository transactionRepo) : IDataIntegrityValidatorService
 {
     private readonly IInvoiceRepository _invoiceRepo = invoiceRepo;
     private readonly IBlockchainIntegrationService _blockchainIntegrationService = blockchainIntegrationService;

@@ -53,7 +53,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 app.MapOpenApi();
 
-//app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 
 // Endpoint básico para verificar que el gateway está activo

@@ -1,4 +1,3 @@
-using CondoNet.Accounting.Core.Entities;
 using CondoNet.Accounting.Core.Repositories;
 
 namespace CondoNet.Accounting.Api.Endpoints;
@@ -7,7 +6,8 @@ public static class AccountingEntryEndpoints
 {
     public static void MapAccountingEntryEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/entries");
+        var group = app.MapGroup("/entries")
+            .WithTags("Gestión de movimientos");
 
         group.MapGet("/by-transaction/{transactionId}", async (Guid transactionId, IAccountingEntryRepository repo) =>
         {

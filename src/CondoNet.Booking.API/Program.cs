@@ -175,8 +175,8 @@ try
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-    c.SwaggerEndpoint("/booking/swagger/v1/swagger.json", "CondoNet Booking API V1");
-    c.RoutePrefix = "swagger";
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CondoNet Booking API V1");
+        c.RoutePrefix = "swagger";
     });
 
     // Dentro de Program.cs antes de app.Run()
@@ -200,7 +200,7 @@ try
         }
     });
 
-    app.UseHttpsRedirection();
+    // app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
 

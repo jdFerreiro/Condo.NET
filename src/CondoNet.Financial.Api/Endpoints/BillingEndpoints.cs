@@ -1,6 +1,5 @@
 using CondoNet.Financial.Core.Entities;
 using CondoNet.Financial.Core.Interfaces;
-using Microsoft.AspNetCore.Http;
 
 namespace CondoNet.Financial.Api.Endpoints;
 

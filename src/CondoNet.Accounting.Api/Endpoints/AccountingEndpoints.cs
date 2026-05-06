@@ -7,7 +7,9 @@ public static class AccountingEndpoints
 {
     public static void MapAccountingEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/accounting");
+        var group = app.MapGroup("/accounting")
+            .WithTags("Gestión de transacciones");
+
 
         group.MapPost("/transactions", async (AccountingTransaction transaction, IAccountingAutomatonService automaton, CondoNet.Shared.Interfaces.ITenantService tenantService, HttpContext ctx) =>
         {
