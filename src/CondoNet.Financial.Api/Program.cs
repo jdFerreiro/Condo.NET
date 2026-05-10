@@ -199,7 +199,7 @@ try
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CondoNet Financial API V1");
+        c.SwaggerEndpoint("v1/swagger.json", "CondoNet Financial API V1");
         c.RoutePrefix = "swagger";
     });
 
