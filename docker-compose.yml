@@ -20,6 +20,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - condonet_net
 
   # Base de datos exclusiva para Auth
   redis:
@@ -30,6 +32,8 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - condonet_net
 
   db.auth:
     image: postgres:15-alpine
@@ -42,6 +46,8 @@ services:
       - "5433:5432" # Puerto para auth
     volumes:
       - auth_db_data:/var/lib/postgresql/data
+    networks:
+      - condonet_net
 
   # Base de datos exclusiva para Assets
   db.asset:
@@ -55,6 +61,8 @@ services:
       - "5434:5432" # Puerto para assets
     volumes:
       - asset_db_data:/var/lib/postgresql/data
+    networks:
+      - condonet_net
 
   # Base de datos exclusiva para Financials
   db.financial:
@@ -68,6 +76,8 @@ services:
       - "5435:5432" # Puerto para financial
     volumes:
       - financial_db_data:/var/lib/postgresql/data
+    networks:
+      - condonet_net
 
   # Base de datos exclusiva para Booking
   db.booking:
@@ -81,6 +91,8 @@ services:
       - "5436:5432" # Puerto para booking
     volumes:
       - booking_db_data:/var/lib/postgresql/data
+    networks:
+      - condonet_net
 
   # Base de datos exclusiva para Engagement
   db.engagement:
@@ -94,6 +106,8 @@ services:
       - "5437:5432" # Puerto para engagement
     volumes:
       - engagement_db_data:/var/lib/postgresql/data
+    networks:
+      - condonet_net
 
   # Base de datos exclusiva para Accounting
   db.accounting:
@@ -107,6 +121,8 @@ services:
       - "5438:5432" # Puerto para accounting
     volumes:
       - accounting_db_data:/var/lib/postgresql/data
+    networks:
+      - condonet_net
  
   # Base de datos exclusiva para Payment
   db.payment:
@@ -120,6 +136,8 @@ services:
       - "5439:5432" # Puerto para payment
     volumes:
       - payment_db_data:/var/lib/postgresql/data
+    networks:
+      - condonet_net
 
 
   # --- MICROSERVICIOS ---
@@ -139,6 +157,7 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Http__Url=http://0.0.0.0:80
       - ASPNETCORE_Kestrel__Endpoints__Https__Url=https://0.0.0.0:443
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
@@ -147,12 +166,16 @@ services:
          condition: service_started
       rabbitmq:
         condition: service_healthy
+    env_file:
+      - .env
     ports:
       - "8180:80"
       - "8181:443"
     volumes:
       - ./logs/auth:/app/Logs
       - ${USERPROFILE}/.aspnet/https:/https:ro
+    networks:
+      - condonet_net
     
   assets-service:
     build:
@@ -170,19 +193,25 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Http__Url=http://0.0.0.0:80
+      - ASPNETCORE_Kestrel__Endpoints__Https__Url=https://0.0.0.0:443
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
       db.asset:
-         condition: service_started
+        condition: service_started
       rabbitmq:
         condition: service_healthy
+    env_file:
+      - .env
     ports:
       - "8280:80"
       - "8281:443"
     volumes:
       - ./logs/asset:/app/Logs
       - ${USERPROFILE}/.aspnet/https:/https:ro
+    networks:
+      - condonet_net
  
   financial-service:
     build:
@@ -200,19 +229,25 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Http__Url=http://0.0.0.0:80
+      - ASPNETCORE_Kestrel__Endpoints__Https__Url=https://0.0.0.0:443
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
       db.financial:
-         condition: service_started
+        condition: service_started
       rabbitmq:
         condition: service_healthy
+    env_file:
+      - .env
     ports:
       - "8380:80"
       - "8381:443"
     volumes:
       - ./logs/financial:/app/Logs
       - ${USERPROFILE}/.aspnet/https:/https:ro
+    networks:
+      - condonet_net
 
   booking-service:
     build:
@@ -230,6 +265,8 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Http__Url=http://0.0.0.0:80
+      - ASPNETCORE_Kestrel__Endpoints__Https__Url=https://0.0.0.0:443
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
@@ -239,12 +276,16 @@ services:
          condition: service_started
       rabbitmq:
         condition: service_healthy
+    env_file:
+      - .env
     ports:
       - "8480:80"
       - "8481:443"
     volumes:
       - ./logs/booking:/app/Logs
       - ${USERPROFILE}/.aspnet/https:/https:ro
+    networks:
+      - condonet_net
  
   engagement-service:
     build:
@@ -262,6 +303,8 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Http__Url=http://0.0.0.0:80
+      - ASPNETCORE_Kestrel__Endpoints__Https__Url=https://0.0.0.0:443
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
@@ -275,6 +318,8 @@ services:
     volumes:
       - ./logs/engagement:/app/Logs
       - ${USERPROFILE}/.aspnet/https:/https:ro
+    networks:
+      - condonet_net
  
   accounting-service:
     build:
@@ -292,19 +337,25 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Http__Url=http://0.0.0.0:80
+      - ASPNETCORE_Kestrel__Endpoints__Https__Url=https://0.0.0.0:443
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
       db.accounting:
          condition: service_started
       rabbitmq:
-        condition: service_healthy
+         condition: service_healthy
+    env_file:
+      - .env
     ports:
       - "8680:80"
       - "8681:443"
     volumes:
       - ./logs/accounting:/app/Logs
       - ${USERPROFILE}/.aspnet/https:/https:ro
+    networks:
+      - condonet_net
 
   gateway-service:
     build:
@@ -321,6 +372,7 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Http__Url=http://0.0.0.0:80
       - ASPNETCORE_Kestrel__Endpoints__Https__Url=https://0.0.0.0:443
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
@@ -335,6 +387,8 @@ services:
     volumes:
       - ./logs/gateway:/app/Logs
       - ${USERPROFILE}/.aspnet/https:/https:ro
+    networks:
+      - condonet_net
 
   payment-service:
     build:
@@ -352,6 +406,8 @@ services:
       - RabbitMQ__Port=${RABBITMQ_DEFAULT_PORT}
       - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER} # Debe coincidir arriba
       - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}  # Debe coincidir arriba
+      - ASPNETCORE_Kestrel__Endpoints__Http__Url=http://0.0.0.0:80
+      - ASPNETCORE_Kestrel__Endpoints__Https__Url=https://0.0.0.0:443
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path=/https/condonet-dev-cert.pfx
       - ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password=${CERT_PASSWORD}
     depends_on:
@@ -359,12 +415,16 @@ services:
          condition: service_started
       rabbitmq:
         condition: service_healthy
+    env_file:
+      - .env
     ports:
       - "8780:80"
       - "8781:443"
     volumes:
       - ./logs/payment:/app/Logs
       - ${USERPROFILE}/.aspnet/https:/https:ro
+    networks:
+      - condonet_net
 
 volumes:
   pgdata:
@@ -376,3 +436,7 @@ volumes:
   accounting_db_data: # Y este para el de accounting
   payment_db_data: # Y este para el de payment
   redis_data:
+
+networks:
+  condonet_net:
+    driver: bridge

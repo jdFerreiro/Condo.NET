@@ -2,6 +2,7 @@ using CondoNet.Auth.Api.Endpoints;
 using CondoNet.Auth.Core.Interfaces;
 using CondoNet.Auth.Infrastructure.Persistence;
 using CondoNet.Auth.Infrastructure.Services;
+using CondoNet.Shared.Middleware;
 using CondoNet.Shared.Settings;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -153,7 +154,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "CondoNet Auth API V1");
+    c.SwaggerEndpoint("v1/swagger.json", "CondoNet Auth API V1");
     c.RoutePrefix = "swagger";
 });
 
@@ -169,7 +170,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Middleware de ApiKey (si lo necesitas en Auth, aunque normalmente solo en Asset)
-// app.UseMiddleware<ApiKeyMiddleware>();
+app.UseMiddleware<ApiKeyMiddleware>();
 
 // 8. Mapeo de Endpoints (Minimal APIs) - SIEMPRE al final
 app.MapAuthEndpoints();

@@ -42,4 +42,8 @@
 	<InternalsVisibleTo Include="CondoNet.Auth.Tests.Integration" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Logs\" />
+  </ItemGroup>
+
 </Project>

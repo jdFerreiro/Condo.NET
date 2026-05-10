@@ -43,16 +43,13 @@ builder.Services.AddReverseProxy()
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-app.MapOpenApi();
+app.UseRouting();
+app.UseStaticFiles(); // <-- Esto es clave para Swagger UI
 
-// app.UseHttpsRedirection();
+app.MapReverseProxy();
 
-
-// Endpoint básico para verificar que el gateway está activo
+// Endpoints básicos
 app.MapGet("/", () => "Gateway activo");
-
-// Endpoint de health check
 app.MapGet("/health", () => Results.Ok("Healthy"));
 
 app.Run();
