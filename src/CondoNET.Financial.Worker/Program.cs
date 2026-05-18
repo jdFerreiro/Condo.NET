@@ -1,37 +1,26 @@
-using CondoNet.Financial.Core.Interfaces;
-using CondoNet.Financial.Core.Services;
-using CondoNet.Financial.Infrastructure.Repositories;
-using CondoNet.Financial.Infrastructure.Services;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using CondoNET.Financial.Worker;
+using MassTransit;
 
-namespace CondoNET.Financial.Worker
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddHostedService<Worker>();
+
+// MassTransit (RabbitMQ)
+builder.Services.AddMassTransit(x =>
 {
-    public class Program
+    x.UsingRabbitMq((context, cfg) =>
     {
-        public static void Main(string[] args)
+        var rabbitSettings = builder.Configuration.GetSection("RabbitMqSettings").Get<CondoNet.Shared.Settings.RabbitMqSettings>();
+        cfg.Host(rabbitSettings.Host, (ushort)rabbitSettings.Port, rabbitSettings.VirtualHost, h =>
         {
-            var host = Host.CreateDefaultBuilder(args)
-                .ConfigureServices((hostContext, services) =>
-                {
-                    // Registrar dependencias del Core y de infraestructura
-                    services.AddScoped<DataIntegrityValidatorService>();
+            h.Username(rabbitSettings.Username);
+            h.Password(rabbitSettings.Password);
+        });
+    });
+});
 
+// Nethereum y configuración de blockchain
+builder.Services.Configure<BlockchainSettings>(builder.Configuration.GetSection("BlockchainSettings"));
+builder.Services.AddSingleton<IBlockchainService, BlockchainService>();
 
-                    // Repositorios usados por Matching Engine
-                    services.AddScoped<IReportedPaymentRepository, ReportedPaymentRepository>();
-                    services.AddScoped<IBankTransactionRepository, BankTransactionRepository>();
-                    services.AddScoped<IAuditLogRepository, AuditLogRepository>();
-
-                    services.AddHostedService<DataIntegrityValidationWorker>();
-
-                    // Registrar Matching Engine y su Worker
-                    services.AddScoped<IMatchingEngine, MatchingEngineService>();
-                    services.AddHostedService<MatchingEngineWorker>();
-                })
-                .Build();
-
-            host.Run();
-        }
-    }
-}
+var host = builder.Build();
+host.Run();

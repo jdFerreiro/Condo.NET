@@ -1,6 +1,5 @@
 using MassTransit;
 using Microsoft.Extensions.Options;
-using CondoNet.Shared.Settings;
 
 namespace CondoNET.Financial.Worker;
 
