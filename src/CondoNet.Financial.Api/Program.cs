@@ -67,7 +67,7 @@ try
 
     // 2. Base de Datos
     builder.Services.AddDbContext<FinancialDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         b => b.MigrationsAssembly("CondoNet.Financial.Infrastructure")));
 
     // Registrar consumidor de eventos de facturas pagadas
@@ -197,9 +197,9 @@ try
 
     // Health Checks
     builder.Services.AddHealthChecks()
-        .AddNpgSql(
+        .AddSqlServer(
             builder.Configuration.GetConnectionString("DefaultConnection")!,
-            name: "PostgreSQL");
+            name: "SQL Server");
 
 
     // 7. Pipeline de Middleware

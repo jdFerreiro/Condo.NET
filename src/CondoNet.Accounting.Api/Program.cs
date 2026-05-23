@@ -60,7 +60,7 @@ try
 
 
     builder.Services.AddDbContext<AccountingDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         b => b.MigrationsAssembly("CondoNet.Accounting.Infrastructure")));
 
     builder.Services.AddHttpContextAccessor();
@@ -173,9 +173,9 @@ try
 
     // Health Checks
     builder.Services.AddHealthChecks()
-        .AddNpgSql(
+        .AddSqlServer(
             builder.Configuration.GetConnectionString("DefaultConnection")!,
-            name: "PostgreSQL");
+            name: "SQL Server");
 
 
     // 7. Pipeline de Middleware

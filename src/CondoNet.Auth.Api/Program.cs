@@ -47,14 +47,14 @@ var rabbitMqSettings = builder.Configuration.GetSection("RabbitMQ").Get<RabbitMq
 
 // 2. Base de Datos
 builder.Services.AddDbContext<AuthDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
     b => b.MigrationsAssembly("CondoNet.Auth.Infrastructure")));
 
 // Health Checks
 builder.Services.AddHealthChecks()
-    .AddNpgSql(
+    .AddSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")!,
-        name: "PostgreSQL");
+        name: "SQL Server");
 
 // 3. Registro de Servicios Estandarizados (DI)
 builder.Services.AddScoped<IIdentityService, IdentityService>();
