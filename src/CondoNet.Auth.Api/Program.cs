@@ -50,6 +50,12 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
     b => b.MigrationsAssembly("CondoNet.Auth.Infrastructure")));
 
+// Health Checks
+builder.Services.AddHealthChecks()
+    .AddNpgSql(
+        builder.Configuration.GetConnectionString("DefaultConnection")!,
+        name: "PostgreSQL");
+
 // 3. Registro de Servicios Estandarizados (DI)
 builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -157,6 +163,9 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("v1/swagger.json", "CondoNet Auth API V1");
     c.RoutePrefix = "swagger";
 });
+
+// Health check endpoint
+app.MapHealthChecks("/health");
 
 // Middleware de logging para depuración
 app.Use(async (context, next) =>

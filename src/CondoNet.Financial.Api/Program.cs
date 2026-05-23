@@ -195,6 +195,13 @@ try
 
     var app = builder.Build();
 
+    // Health Checks
+    builder.Services.AddHealthChecks()
+        .AddNpgSql(
+            builder.Configuration.GetConnectionString("DefaultConnection"),
+            name: "PostgreSQL");
+
+
     // 7. Pipeline de Middleware
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -202,6 +209,9 @@ try
         c.SwaggerEndpoint("v1/swagger.json", "CondoNet Financial API V1");
         c.RoutePrefix = "swagger";
     });
+
+    // Health check endpoint
+    app.MapHealthChecks("/health");
 
     // Dentro de Program.cs antes de app.Run()
     app.Use(async (context, next) =>

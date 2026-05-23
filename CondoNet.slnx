@@ -48,4 +48,7 @@
     <Project Path="src/CondoNet.Payment.Core/CondoNet.Payment.Core.csproj" Id="89b95cb2-1ad3-4c65-bf27-4bef9f7f7c73" />
     <Project Path="src/CondoNet.Payment.Infrastructure/CondoNet.Payment.Infrastructure.csproj" Id="48a01961-4a40-4396-bb2d-b71a1a88e31d" />
   </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/CondoNet.Asset.Api.IntegrationTests/CondoNet.Asset.Api.IntegrationTests.csproj" />
+  </Folder>
 </Solution>
