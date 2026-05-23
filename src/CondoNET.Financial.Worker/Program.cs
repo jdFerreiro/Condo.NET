@@ -1,3 +1,4 @@
+using CondoNet.Shared.Settings;
 using CondoNET.Financial.Worker;
 using MassTransit;
 
@@ -9,7 +10,7 @@ builder.Services.AddMassTransit(x =>
 {
     x.UsingRabbitMq((context, cfg) =>
     {
-        var rabbitSettings = builder.Configuration.GetSection("RabbitMqSettings").Get<CondoNet.Shared.Settings.RabbitMqSettings>();
+        RabbitMqSettings rabbitSettings = builder.Configuration.GetSection("RabbitMqSettings").Get<RabbitMqSettings>()!;
         cfg.Host(rabbitSettings.Host, (ushort)rabbitSettings.Port, rabbitSettings.VirtualHost, h =>
         {
             h.Username(rabbitSettings.Username);

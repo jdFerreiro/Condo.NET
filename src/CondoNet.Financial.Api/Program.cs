@@ -198,7 +198,7 @@ try
     // Health Checks
     builder.Services.AddHealthChecks()
         .AddNpgSql(
-            builder.Configuration.GetConnectionString("DefaultConnection"),
+            builder.Configuration.GetConnectionString("DefaultConnection")!,
             name: "PostgreSQL");
 
 

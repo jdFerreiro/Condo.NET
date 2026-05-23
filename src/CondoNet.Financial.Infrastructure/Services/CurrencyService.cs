@@ -11,10 +11,10 @@ public class CurrencyService(ICurrencyRateRepository currencyRateRepository,
     private readonly ICurrencyAdjustmentLogRepository _adjustmentLogRepository = adjustmentLogRepository;
 
 
-    public async Task<CurrencyRate?> GetRateAsync(string currencyIsoCode, DateTime date, Guid organizationId, Guid condominiumId, CancellationToken cancellationToken = default)
+    public async Task<CurrencyRate> GetRateAsync(string currencyIsoCode, DateTime date, Guid organizationId, Guid condominiumId, CancellationToken cancellationToken = default)
         => await _currencyRateRepository.GetByCurrencyAndDateAsync(currencyIsoCode, date, organizationId, condominiumId, cancellationToken);
 
-    public async Task<CurrencyRate?> GetActiveRateAsync(string currencyIsoCode, Guid organizationId, Guid condominiumId, CancellationToken cancellationToken = default)
+    public async Task<CurrencyRate> GetActiveRateAsync(string currencyIsoCode, Guid organizationId, Guid condominiumId, CancellationToken cancellationToken = default)
         => await _currencyRateRepository.GetActiveRateAsync(currencyIsoCode, organizationId, condominiumId, cancellationToken);
 
     public async Task<IEnumerable<CurrencyRate>> GetRatesHistoryAsync(string currencyIsoCode, Guid organizationId, Guid condominiumId, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
