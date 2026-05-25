@@ -19,7 +19,7 @@ namespace CondoNet.Asset.Api
             var optionsBuilder = new DbContextOptionsBuilder<AssetDbContext>();
             var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-            optionsBuilder.UseNpgsql(connectionString);
+            optionsBuilder.UseSqlServer(connectionString);
 
             // 2. Simulamos el TenantService para el tiempo de diseño (Migraciones)
             var dummyTenantService = new DummyTenantService();

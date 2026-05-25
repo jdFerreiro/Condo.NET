@@ -23,7 +23,7 @@ Log.Logger = new LoggerConfiguration()
 try
 {
 
-    Log.Information("Iniciando el microservicio Asset Service de CondoNET...");
+    Log.Information("Iniciando el microservicio Asset Service de HabitApp...");
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -74,7 +74,7 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(s =>
     {
-        s.SwaggerDoc("v1", new OpenApiInfo { Title = "CondoNet Asset API", Version = "v1" });
+        s.SwaggerDoc("v1", new OpenApiInfo { Title = "HabitApp Asset API", Version = "v1" });
 
         // Configuración de Seguridad en Swagger
         s.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -157,20 +157,19 @@ try
             return handler;
         });
 
-    var app = builder.Build();
-
     // Health Checks
     builder.Services.AddHealthChecks()
         .AddSqlServer(
             builder.Configuration.GetConnectionString("DefaultConnection")!,
             name: "SQL Server");
 
+    var app = builder.Build();
 
     // 7. Pipeline de Middleware
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("v1/swagger.json", "CondoNet Asset API V1");
+        c.SwaggerEndpoint("v1/swagger.json", "HabitApp Asset API V1");
         c.RoutePrefix = "swagger";
     });
 

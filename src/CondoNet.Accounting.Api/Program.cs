@@ -1,7 +1,6 @@
 using CondoNet.Accounting.Api.Endpoints;
 using CondoNet.Accounting.Core.Repositories;
 using CondoNet.Accounting.Core.Services;
-using CondoNet.Accounting.Infrastructure.Consumers;
 using CondoNet.Accounting.Infrastructure.Persistence;
 using CondoNet.Accounting.Infrastructure.Repositories;
 using CondoNet.Accounting.Infrastructure.Services;
@@ -9,7 +8,6 @@ using CondoNet.Shared.Interfaces;
 using CondoNet.Shared.Middleware;
 using CondoNet.Shared.Services;
 using CondoNet.Shared.Settings;
-using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -25,7 +23,7 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-    Log.Information("Iniciando el microservicio Accounting Service de CondoNET...");
+    Log.Information("Iniciando el microservicio Accounting Service de HabitApp...");
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -81,7 +79,7 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(s =>
     {
-        s.SwaggerDoc("v1", new OpenApiInfo { Title = "CondoNet Accounting API", Version = "v1" });
+        s.SwaggerDoc("v1", new OpenApiInfo { Title = "HabitApp Accounting API", Version = "v1" });
 
         // Configuración de Seguridad en Swagger
         s.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -112,22 +110,22 @@ try
     });
 
     // 5. MassTransit con RabbitMQ (Simplificado)
-    builder.Services.AddMassTransit(x =>
-    {
-        x.AddConsumer<InvoicePaidEventConsumer>();
-        x.AddConsumer<InvoiceRegisteredEventConsumer>();
-        x.AddConsumer<CondoCreatedEventConsumer>();
-        x.UsingRabbitMq((context, cfg) =>
-        {
-            // Usamos solo el nombre del host (localhost o rabbitmq)
-            cfg.Host(rabbitMqSettings.Host, (ushort)rabbitMqSettings.Port, "/", h =>
-            {
-                // Configuramos el puerto por separado
-                h.Username(rabbitMqSettings.Username);
-                h.Password(rabbitMqSettings.Password);
-            });
-        });
-    });
+    //builder.Services.AddMassTransit(x =>
+    //{
+    //    x.AddConsumer<InvoicePaidEventConsumer>();
+    //    x.AddConsumer<InvoiceRegisteredEventConsumer>();
+    //    x.AddConsumer<CondoCreatedEventConsumer>();
+    //    x.UsingRabbitMq((context, cfg) =>
+    //    {
+    //        // Usamos solo el nombre del host (localhost o rabbitmq)
+    //        cfg.Host(rabbitMqSettings.Host, (ushort)rabbitMqSettings.Port, "/", h =>
+    //        {
+    //            // Configuramos el puerto por separado
+    //            h.Username(rabbitMqSettings.Username);
+    //            h.Password(rabbitMqSettings.Password);
+    //        });
+    //    });
+    //});
 
     // 6. Autenticación JWT
     var key = Encoding.ASCII.GetBytes(jwtSettings.Secret); // Usamos .Secret de tu clase
@@ -169,20 +167,19 @@ try
             return handler;
         });
 
-    var app = builder.Build();
-
     // Health Checks
     builder.Services.AddHealthChecks()
         .AddSqlServer(
             builder.Configuration.GetConnectionString("DefaultConnection")!,
             name: "SQL Server");
 
+    var app = builder.Build();
 
     // 7. Pipeline de Middleware
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("v1/swagger.json", "CondoNet Accounting API V1");
+        c.SwaggerEndpoint("v1/swagger.json", "HabitApp Accounting API V1");
         c.RoutePrefix = "swagger";
     });
 

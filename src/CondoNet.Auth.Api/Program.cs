@@ -188,4 +188,12 @@ app.MapPasswordEndpoints();
 app.MapUserEndpoints();
 app.MapContextEndpoints();
 
-app.Run();
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    Console.WriteLine(ex);
+    throw;
+}
