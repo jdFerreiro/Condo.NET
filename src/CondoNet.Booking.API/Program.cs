@@ -70,7 +70,7 @@ try
 
     // 2. Base de Datos
     builder.Services.AddDbContext<BookingDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         b => b.MigrationsAssembly("CondoNet.Booking.Infrastructure")));
 
     builder.Services.AddHttpContextAccessor();
