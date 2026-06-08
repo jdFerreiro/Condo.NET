@@ -378,3 +378,18 @@ secrets.json
 # Bloquear archivos de entorno de Docker (si usas microservicios)
 .env
 *.env
+/src/CondoNet.Accounting.Api/appsettings.json
+/src/CondoNET.Asset.Api/appsettings.json
+/src/CondoNET.Asset.Api/appsettings.Production.json
+/src/CondoNet.Accounting.Api/appsettings.Production.json
+/src/CondoNet.Auth.Api/appsettings.Production.json
+/src/CondoNet.Booking.API/appsettings.Production.json
+/src/CondoNet.Booking.API/appsettings.json
+/src/CondoNet.Engagement.Api/appsettings.json
+/src/CondoNet.Engagement.Api/appsettings.Production.json
+/src/CondoNet.Financial.Api/appsettings.Production.json
+/src/CondoNet.Financial.Api/appsettings.json
+/src/CondoNet.Payment.Api/appsettings.json
+/src/CondoNet.Payment.Api/appsettings.Production.json
+/src/CondoNet.Gateway.Api/appsettings.json
+/src/CondoNet.Gateway.Api/appsettings.Production.json
