@@ -28,17 +28,15 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-
     Log.Information("Iniciando el microservicio Payment Service de CondoNET...");
 
     var builder = WebApplication.CreateBuilder(args);
 
-    // Configurar Serilog antes de builder.Build()
     Log.Logger = new LoggerConfiguration()
         .MinimumLevel.Information()
         .MinimumLevel.Override("Microsoft", LogEventLevel.Warning) // Evita spam de logs internos de .NET
         .Enrich.FromLogContext()
-        .Enrich.WithProperty("Application", "AuthService") // Identifica que este log es de Auth
+        .Enrich.WithProperty("Application", "PaymentService") // Identifica que este log es de Payment
         .WriteTo.Console()
         .WriteTo.File("Logs/log-.txt",
             rollingInterval: RollingInterval.Day, // Un archivo por día: log-20240321.txt
@@ -48,18 +46,14 @@ try
 
     builder.Host.UseSerilog();
 
-
     builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
-    builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ")); // Asegúrate que coincida con tu .env/appsettings
-
-
-    // Registrar BlockchainSettings y servicios de Blockchain
+    builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"));
     builder.Services.Configure<BlockchainSettings>(builder.Configuration.GetSection("BlockchainSettings"));
+
     builder.Services.AddSingleton(resolver =>
         resolver.GetRequiredService<Microsoft.Extensions.Options.IOptions<BlockchainSettings>>().Value);
-    builder.Services.AddScoped<IBlockchainService, BlockchainService>();
 
-    // Blockchain integration services
+    builder.Services.AddScoped<IBlockchainService, BlockchainService>();
     builder.Services.AddScoped<IBlockchainIntegrationService, BlockchainIntegrationService>();
     builder.Services.AddScoped<IPaymentBlockchainService, PaymentBlockchainService>();
 
@@ -74,36 +68,36 @@ try
     var rabbitMqSettings = builder.Configuration.GetSection("RabbitMQ").Get<RabbitMqSettings>()
         ?? throw new InvalidOperationException("RabbitMQ no configurado.");
 
-    // 2. Base de Datos
     builder.Services.AddDbContext<PaymentDbContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         b => b.MigrationsAssembly("CondoNet.Payment.Infrastructure")));
 
     builder.Services.AddHttpContextAccessor();
-
-
     builder.Services.AddScoped<ITenantService, TenantService>();
 
-    // Registro de pasarelas de pago y factory
+    // Opciones de pasarelas de pago
     builder.Services.AddSingleton<StripeOptions>();
     builder.Services.AddSingleton<PaypalOptions>();
     builder.Services.AddSingleton<MercadoPagoOptions>();
+
+    // Implementaciones de pasarelas de pago
     builder.Services.AddScoped<StripePaymentGatewayService>();
     builder.Services.AddScoped<PaypalPaymentGatewayService>();
     builder.Services.AddScoped<MercadoPagoPaymentGatewayService>();
+
+    // Mapeos explícitos para la factoría dinámicos
     builder.Services.AddScoped<IPaymentGatewayService>(sp => sp.GetRequiredService<StripePaymentGatewayService>());
     builder.Services.AddScoped<IPaymentGatewayService>(sp => sp.GetRequiredService<PaypalPaymentGatewayService>());
     builder.Services.AddScoped<IPaymentGatewayService>(sp => sp.GetRequiredService<MercadoPagoPaymentGatewayService>());
+
     builder.Services.AddScoped<PaymentGatewayFactory>();
 
-    // 4. OpenAPI / Swagger
     builder.Services.AddOpenApi();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(s =>
     {
         s.SwaggerDoc("v1", new OpenApiInfo { Title = "CondoNet Payment API", Version = "v1" });
 
-        // Configuración de Seguridad en Swagger
         s.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
             Name = "Authorization",
@@ -129,23 +123,19 @@ try
         });
     });
 
-    // 5. MassTransit con RabbitMQ (Simplificado)
     builder.Services.AddMassTransit(x =>
     {
         x.UsingRabbitMq((context, cfg) =>
         {
-            // Usamos solo el nombre del host (localhost o rabbitmq)
             cfg.Host(rabbitMqSettings.Host, (ushort)rabbitMqSettings.Port, "/", h =>
             {
-                // Configuramos el puerto por separado
                 h.Username(rabbitMqSettings.Username);
                 h.Password(rabbitMqSettings.Password);
             });
         });
     });
 
-    // 6. Autenticación JWT
-    var key = Encoding.ASCII.GetBytes(jwtSettings.Secret); // Usamos .Secret de tu clase
+    var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
 
     builder.Services.AddAuthentication(x =>
     {
@@ -169,8 +159,7 @@ try
     });
 
     builder.Services.AddAuthorizationBuilder()
-        .AddPolicy("RequireAdminRole", policy =>
-            policy.RequireRole("ADMIN"))
+        .AddPolicy("RequireAdminRole", policy => policy.RequireRole("ADMIN"))
         .AddPolicy("RequirePaymentRole", p => p.RequireRole("ADMIN", "PaymentManager"))
         .AddPolicy("RequiredAnyRole", p => p.RequireRole("ADMIN", "Manager", "User"));
 
@@ -184,22 +173,20 @@ try
             return handler;
         });
 
-    // 8. Inyección de Dependencias para Servicios y Repositorios
+    // Repositorios y validadores
     builder.Services.AddScoped<IPaymentReceiptRepository, PaymentReceiptRepository>();
-    builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+    builder.Services.AddScoped<IPaymentRepository, PaymentRepository>(); // 🔥 Corregido: Limpiada la asignación errónea de interfaces
     builder.Services.AddScoped<IWebhookEventRepository, WebhookEventRepository>();
     builder.Services.AddScoped<IPaymentReceiptValidator, PaymentReceiptValidator>();
 
-    var app = builder.Build();
-
-    // Health Checks
+    // 🔥 CORREGIDO: Movido el registro de Health Checks antes del Build de la aplicación
     builder.Services.AddHealthChecks()
         .AddSqlServer(
             builder.Configuration.GetConnectionString("DefaultConnection")!,
             name: "SQL Server");
 
+    var app = builder.Build();
 
-    // 7. Pipeline de Middleware
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
@@ -207,14 +194,19 @@ try
         c.RoutePrefix = "swagger";
     });
 
-    // Health check endpoint
     app.MapHealthChecks("/health");
 
-    // Dentro de Program.cs antes de app.Run()
+    // 🔥 CORREGIDO: Ejecutamos autenticación primero para poblar correctamente el ClaimsPrincipal
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    // 🔥 CORREGIDO: Posicionado después de UseAuthentication para inyectar correctamente los datos contextuales
     app.Use(async (context, next) =>
     {
-        var condoId = context.User.FindFirst("condo_id")?.Value ?? "N/A";
+        // 💡 Ajustado: Cambiado "condo_id" a "CondoId" en mayúsculas como lo dicta tu esquema
+        var condoId = context.User.FindFirst("CondoId")?.Value ?? "N/A";
         var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Anonymous";
+
         if (!context.Request.Headers.TryGetValue("X-Correlation-ID", out var correlationId))
         {
             correlationId = Guid.NewGuid().ToString();
@@ -224,23 +216,13 @@ try
         using (Serilog.Context.LogContext.PushProperty("UserId", userId))
         using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
         {
-            // 3. Añadirlo a la respuesta para que el cliente pueda reportarlo en caso de error
             context.Response.Headers.Append("X-Correlation-ID", correlationId);
-
             await next();
         }
     });
 
-    // app.UseHttpsRedirection();
-    app.UseAuthentication();
-    app.UseAuthorization();
-
-    // El middleware de ApiKey debe ir después de Auth si depende de claims, 
-    // o antes si es independiente. Aquí lo dejamos antes del ruteo.
     app.UseMiddleware<ApiKeyMiddleware>();
 
-
-    // 4. Mapeo de Minimal APIs
     app.MapReceiptValidationEndpoints();
     app.MapPaymentEndpoints();
     app.MapInvoiceEndpoints();

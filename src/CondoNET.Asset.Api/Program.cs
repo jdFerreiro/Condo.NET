@@ -22,7 +22,6 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-
     Log.Information("Iniciando el microservicio Asset Service de HabitApp...");
 
     var builder = WebApplication.CreateBuilder(args);
@@ -32,7 +31,7 @@ try
         .MinimumLevel.Information()
         .MinimumLevel.Override("Microsoft", LogEventLevel.Warning) // Evita spam de logs internos de .NET
         .Enrich.FromLogContext()
-        .Enrich.WithProperty("Application", "AuthService") // Identifica que este log es de Auth
+        .Enrich.WithProperty("Application", "AssetService") // Ajustado: Identifica que este log es de Asset
         .WriteTo.Console()
         .WriteTo.File("Logs/log-.txt",
             rollingInterval: RollingInterval.Day, // Un archivo por día: log-20240321.txt
@@ -43,7 +42,7 @@ try
     builder.Host.UseSerilog();
 
     builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
-    builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ")); // Asegúrate que coincida con tu .env/appsettings
+    builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"));
 
     builder.Services.ConfigureHttpJsonOptions(options =>
     {
@@ -102,15 +101,13 @@ try
         });
     });
 
-    // 5. MassTransit con RabbitMQ (Simplificado)
+    // 5. MassTransit con RabbitMQ
     builder.Services.AddMassTransit(x =>
     {
         x.UsingRabbitMq((context, cfg) =>
         {
-            // Usamos solo el nombre del host (localhost o rabbitmq)
             cfg.Host(rabbitMqSettings.Host, (ushort)rabbitMqSettings.Port, "/", h =>
             {
-                // Configuramos el puerto por separado
                 h.Username(rabbitMqSettings.Username);
                 h.Password(rabbitMqSettings.Password);
             });
@@ -118,7 +115,7 @@ try
     });
 
     // 6. Autenticación JWT
-    var key = Encoding.ASCII.GetBytes(jwtSettings.Secret); // Usamos .Secret de tu clase
+    var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
 
     builder.Services.AddAuthentication(x =>
     {
@@ -176,11 +173,19 @@ try
     // Health check endpoint
     app.MapHealthChecks("/health");
 
-    // Dentro de Program.cs antes de app.Run()
+    // app.UseHttpsRedirection();
+
+    // CORREGIDO: Autenticación PRIMERO para poder poblar el contexto de usuario
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    // CORREGIDO: Movido después de la autenticación para que no dé siempre anónimo
     app.Use(async (context, next) =>
     {
-        var condoId = context.User.FindFirst("condo_id")?.Value ?? "N/A";
+        // 💡 Ajustado: Mapeado a "CondoId" en mayúsculas como viene en tu token JWT
+        var condoId = context.User.FindFirst("CondoId")?.Value ?? "N/A";
         var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Anonymous";
+
         if (!context.Request.Headers.TryGetValue("X-Correlation-ID", out var correlationId))
         {
             correlationId = Guid.NewGuid().ToString();
@@ -190,19 +195,13 @@ try
         using (Serilog.Context.LogContext.PushProperty("UserId", userId))
         using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
         {
-            // 3. Añadirlo a la respuesta para que el cliente pueda reportarlo en caso de error
             context.Response.Headers.Append("X-Correlation-ID", correlationId);
 
             await next();
         }
     });
 
-    // app.UseHttpsRedirection();
-    app.UseAuthentication();
-    app.UseAuthorization();
-
-    // El middleware de ApiKey debe ir después de Auth si depende de claims, 
-    // o antes si es independiente. Aquí lo dejamos antes del ruteo.
+    // El middleware de ApiKey se ejecuta con los logs estructurados listos
     app.UseMiddleware<ApiKeyMiddleware>();
 
     // 4. Mapeo de Minimal APIs

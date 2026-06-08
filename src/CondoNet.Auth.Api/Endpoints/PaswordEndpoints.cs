@@ -8,7 +8,7 @@ public static class PasswordEndpoints
 {
     public static void MapPasswordEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/auth/passwords").WithTags("Seguridad de Contraseñas");
+        var group = app.MapGroup("/api/passwords").WithTags("Seguridad de Contraseñas");
 
         group.MapPost("/change", async (ChangePasswordRequest req, IPasswordService service, ClaimsPrincipal user) =>
         {

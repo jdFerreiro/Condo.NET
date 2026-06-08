@@ -9,7 +9,7 @@ public static class ApiKeyEndpoints
 {
     public static void MapApiKeyEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/auth/apikeys")
+        var group = app.MapGroup("/api/apikey")
                        .WithTags("Gestión de API Keys");
 
         group.MapPost("/", async (CreateApiKeyRequest request, IApiKeyService service, ClaimsPrincipal user) =>
@@ -50,7 +50,6 @@ public static class ApiKeyEndpoints
         })
         .AllowAnonymous()
         .WithName("ValidateApiKey")
-        .WithTags("ApiKey")
         .Produces(200)
         .Produces(401);
 

@@ -144,15 +144,19 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("RequiredAnyRole", policy =>
         policy.RequireRole("ADMIN", "Manager", "User"));
 
-builder.Services.AddHttpClient("AuthService")
-    .ConfigurePrimaryHttpMessageHandler(() =>
+builder.Services.AddHttpClient("AuthService", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("AuthServiceUrl") ?? "http://localhost:8010/"); // base URL
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+})
+.ConfigurePrimaryHttpMessageHandler(() =>
+{
+    return new HttpClientHandler
     {
-        HttpClientHandler handler = new()
-        {
-            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-        };
-        return handler;
-    });
+        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+    };
+});
 
 var app = builder.Build();
 

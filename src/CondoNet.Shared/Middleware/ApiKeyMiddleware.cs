@@ -39,6 +39,7 @@ namespace CondoNet.Shared.Middleware
                     }
 
                     var client = _httpClientFactory.CreateClient("AuthService");
+                    client.BaseAddress = new Uri(_authServiceUrl);
                     client.DefaultRequestHeaders.Clear();
                     client.DefaultRequestHeaders.Add("x-api-key", [.. extractedApiKey]);
                     string url = $"{_authServiceUrl}/api/auth/apikeys/validate?key={extractedApiKey}";

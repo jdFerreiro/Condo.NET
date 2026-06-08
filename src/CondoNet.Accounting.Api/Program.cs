@@ -32,18 +32,18 @@ try
         .MinimumLevel.Information()
         .MinimumLevel.Override("Microsoft", LogEventLevel.Warning) // Evita spam de logs internos de .NET
         .Enrich.FromLogContext()
-        .Enrich.WithProperty("Application", "AuthService") // Identifica que este log es de Auth
+        .Enrich.WithProperty("Application", "AccountingService") // Ajustado: Identifica que este log es de Accounting
         .WriteTo.Console()
         .WriteTo.File("Logs/log-.txt",
             rollingInterval: RollingInterval.Day, // Un archivo por día: log-20240321.txt
-            retainedFileCountLimit: 7,            // Borra logs viejos automáticamente (guarda 1 semana)
+            retainedFileCountLimit: 7,            // Borra logs viejos automáticamente
             outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] [{CorrelationId}] {Message:lj}{NewLine}{Exception}")
         .CreateLogger();
 
     builder.Host.UseSerilog();
 
     builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
-    builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ")); // Asegúrate que coincida con tu .env/appsettings
+    builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"));
 
     builder.Services.ConfigureHttpJsonOptions(options =>
     {
@@ -56,21 +56,16 @@ try
     var rabbitMqSettings = builder.Configuration.GetSection("RabbitMQ").Get<RabbitMqSettings>()
         ?? throw new InvalidOperationException("RabbitMQ no configurado.");
 
-
     builder.Services.AddDbContext<AccountingDbContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         b => b.MigrationsAssembly("CondoNet.Accounting.Infrastructure")));
 
     builder.Services.AddHttpContextAccessor();
 
-    builder.Services.AddScoped<ITenantService, TenantService>();
     // Repositorios
     builder.Services.AddScoped<IAccountingEntryRepository, AccountingEntryRepository>();
     builder.Services.AddScoped<IAccountingTransactionRepository, AccountingTransactionRepository>();
     builder.Services.AddScoped<IAccountRepository, AccountRepository>();
-
-
-    // Servicios
     builder.Services.AddScoped<ITenantService, TenantService>();
     builder.Services.AddScoped<IAccountingAutomatonService, AccountingAutomatonService>();
 
@@ -106,29 +101,10 @@ try
             [new OpenApiSecuritySchemeReference("bearer", document)] = [],
             [new OpenApiSecuritySchemeReference("ApiKey", document)] = []
         });
-
     });
 
-    // 5. MassTransit con RabbitMQ (Simplificado)
-    //builder.Services.AddMassTransit(x =>
-    //{
-    //    x.AddConsumer<InvoicePaidEventConsumer>();
-    //    x.AddConsumer<InvoiceRegisteredEventConsumer>();
-    //    x.AddConsumer<CondoCreatedEventConsumer>();
-    //    x.UsingRabbitMq((context, cfg) =>
-    //    {
-    //        // Usamos solo el nombre del host (localhost o rabbitmq)
-    //        cfg.Host(rabbitMqSettings.Host, (ushort)rabbitMqSettings.Port, "/", h =>
-    //        {
-    //            // Configuramos el puerto por separado
-    //            h.Username(rabbitMqSettings.Username);
-    //            h.Password(rabbitMqSettings.Password);
-    //        });
-    //    });
-    //});
-
     // 6. Autenticación JWT
-    var key = Encoding.ASCII.GetBytes(jwtSettings.Secret); // Usamos .Secret de tu clase
+    var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
 
     builder.Services.AddAuthentication(x =>
     {
@@ -152,10 +128,9 @@ try
     });
 
     builder.Services.AddAuthorizationBuilder()
-        .AddPolicy("RequireAdminRole", policy =>
-            policy.RequireRole("ADMIN"))
-        .AddPolicy("RequireAccountingRole", p => p.RequireRole("ADMIN", "AccountingManager"))
-        .AddPolicy("RequiredAnyRole", p => p.RequireRole("ADMIN", "Manager", "User"));
+        .AddPolicy("RequireAdminRole", policy => policy.RequireRole("ADMIN"))
+        .AddPolicy("RequireAccountingRole", policy => policy.RequireRole("ADMIN", "AccountingManager"))
+        .AddPolicy("RequiredAnyRole", policy => policy.RequireRole("ADMIN", "Manager", "User"));
 
     builder.Services.AddHttpClient("AuthService")
         .ConfigurePrimaryHttpMessageHandler(() =>
@@ -186,11 +161,17 @@ try
     // Health check endpoint
     app.MapHealthChecks("/health");
 
-    // Dentro de Program.cs antes de app.Run()
+    // app.UseHttpsRedirection();
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+
     app.Use(async (context, next) =>
     {
-        var condoId = context.User.FindFirst("condo_id")?.Value ?? "N/A";
+        // 💡 Ajustado: Cambiado "condo_id" a "CondoId" para alinearse exactamente con tus Claims del JWT
+        var condoId = context.User.FindFirst("CondoId")?.Value ?? "N/A";
         var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Anonymous";
+
         if (!context.Request.Headers.TryGetValue("X-Correlation-ID", out var correlationId))
         {
             correlationId = Guid.NewGuid().ToString();
@@ -200,19 +181,14 @@ try
         using (Serilog.Context.LogContext.PushProperty("UserId", userId))
         using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
         {
-            // 3. Añadirlo a la respuesta para que el cliente pueda reportarlo en caso de error
+            // Añadirlo a la respuesta para que el cliente pueda reportarlo en caso de error
             context.Response.Headers.Append("X-Correlation-ID", correlationId);
 
             await next();
         }
     });
 
-    // app.UseHttpsRedirection();
-    app.UseAuthentication();
-    app.UseAuthorization();
-
-    // El middleware de ApiKey debe ir después de Auth si depende de claims, 
-    // o antes si es independiente. Aquí lo dejamos antes del ruteo.
+    // El middleware de ApiKey se ejecuta tras poblar los logs contextuales
     app.UseMiddleware<ApiKeyMiddleware>();
 
     // 4. Mapeo de Minimal APIs

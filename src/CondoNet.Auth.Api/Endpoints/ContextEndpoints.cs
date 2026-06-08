@@ -8,7 +8,7 @@ namespace CondoNet.Auth.Api.Endpoints
     {
         public static void MapContextEndpoints(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/api/auth/context")
+            var group = app.MapGroup("/api/user/context")
                 .WithTags("Gestión de Contextos")
                 .RequireAuthorization();
 
