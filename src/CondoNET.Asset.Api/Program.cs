@@ -207,6 +207,7 @@ try
     // 4. Mapeo de Minimal APIs
     app.MapAssetEndpoints();
     app.MapCommonAssetEndpoints();
+    app.MapOrganizationEndpoints();
     app.MapCondominiumEndpoints();
     app.MapCriticalEquipmentEndpoints();
     app.MapTowerEndpoints();

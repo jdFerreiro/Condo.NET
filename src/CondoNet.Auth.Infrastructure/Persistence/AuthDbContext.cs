@@ -49,8 +49,10 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : DbContext(
         {
             entity.ToTable("permissions");
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired();
-            entity.Property(e => e.Description).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(1500);
+            entity.Property(e => e.Path).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Image).IsRequired();
 
             entity.HasMany(rp => rp.RolePermissions)
                 .WithOne(r => r.Permission)
