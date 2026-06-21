@@ -2,6 +2,7 @@
 {
     public record UserLoggedInEvents(
         Guid UserId,
+        Guid OrganizationId,
         Guid? CurrentCondoId,
         string FullName,
         DateTime LoginDate

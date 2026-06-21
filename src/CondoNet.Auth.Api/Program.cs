@@ -2,6 +2,7 @@ using CondoNet.Auth.Api.Endpoints;
 using CondoNet.Auth.Core.Interfaces;
 using CondoNet.Auth.Infrastructure.Persistence;
 using CondoNet.Auth.Infrastructure.Services;
+using CondoNet.Shared.Handlers;
 using CondoNet.Shared.Middleware;
 using CondoNet.Shared.Settings;
 using MassTransit;
@@ -22,17 +23,34 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .Enrich.WithProperty("Application", "AuthService") // Identifica que este log es de Auth
     .WriteTo.Console()
-    .WriteTo.File("Logs/log-.txt",
+    .WriteTo.File(
+        new Serilog.Formatting.Compact.CompactJsonFormatter(), // Formato JSON compacto para mejor análisis
+        "Logs/log-.txt",
         rollingInterval: RollingInterval.Day, // Un archivo por día: log-20240321.txt
-        retainedFileCountLimit: 7,            // Borra logs viejos automáticamente (guarda 1 semana)
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] [{CorrelationId}] {Message:lj}{NewLine}{Exception}")
+        retainedFileCountLimit: 7)            // Borra logs viejos automáticamente (guarda 1 semana)
     .CreateLogger();
 
 builder.Host.UseSerilog();
 
-// 1. Configuración de Settings (Fuertemente tipados)
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ")); // Asegúrate que coincida con tu .env/appsettings
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<InternalHttpGatewayHandler>();
+builder.Services.AddHttpClient("AuthService", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("AuthServiceUrl") ?? "http://localhost:8010/"); // base URL
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+})
+.AddHttpMessageHandler<InternalHttpGatewayHandler>()
+.ConfigurePrimaryHttpMessageHandler(() =>
+{
+    return new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+    };
+});
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -144,20 +162,6 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("RequiredAnyRole", policy =>
         policy.RequireRole("ADMIN", "Manager", "User"));
 
-builder.Services.AddHttpClient("AuthService", client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("AuthServiceUrl") ?? "http://localhost:8010/"); // base URL
-    client.Timeout = TimeSpan.FromSeconds(30);
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-})
-.ConfigurePrimaryHttpMessageHandler(() =>
-{
-    return new HttpClientHandler
-    {
-        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-    };
-});
-
 var app = builder.Build();
 
 // 7. Pipeline de Middleware
@@ -181,6 +185,9 @@ app.Use(async (context, next) =>
 // app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Middleware de Correlation ID
+app.UseMiddleware<CorrelationIdMiddleware>();
 
 // Middleware de ApiKey (si lo necesitas en Auth, aunque normalmente solo en Asset)
 app.UseMiddleware<ApiKeyMiddleware>();

@@ -7,5 +7,6 @@ namespace CondoNet.Auth.Core.Interfaces
     {
         Task<List<AvailableContextResponse>> GetUserContextsAsync(Guid userId);
         Task<UserContext?> ValidateAndGetContextAsync(Guid userId, Guid contextId);
+        Task<Result<Guid>> AssignContextAsync(AssignContextRequest request);
     }
 }

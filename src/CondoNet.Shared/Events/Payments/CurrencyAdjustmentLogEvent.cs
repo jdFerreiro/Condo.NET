@@ -2,6 +2,7 @@ namespace CondoNet.Shared.Events.Payments
 {
     public record CurrencyAdjustmentLogEvent
     {
+        public Guid CorrelationId { get; init; }
         public Guid AdjustmentId { get; init; }
         public Guid OrganizationId { get; init; }
         public string EntityType { get; init; } = string.Empty;

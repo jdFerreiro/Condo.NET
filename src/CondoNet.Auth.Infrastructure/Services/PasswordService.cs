@@ -7,69 +7,93 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 
-namespace CondoNet.Auth.Infrastructure.Services
+namespace CondoNet.Auth.Infrastructure.Services;
+
+public class PasswordService(AuthDbContext db, IIdentityService identityService, IPublishEndpoint publishEndpoint) : IPasswordService
 {
-    public class PasswordService(AuthDbContext db, IIdentityService identityService, IPublishEndpoint publishEndpoint) : IPasswordService
+    private readonly AuthDbContext _db = db;
+    private readonly IIdentityService _identityService = identityService;
+    private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;
+
+    public async Task<Result<bool>> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
     {
-        private readonly AuthDbContext _db = db;
-        private readonly IIdentityService _identityService = identityService;
-        private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;
+        var user = await _db.Users.FindAsync(userId);
+        if (user == null || !_identityService.VerifyPassword(currentPassword, user.PasswordHash))
+            return Result<bool>.Failure("La contraseña actual es incorrecta.");
 
-        public async Task<Result<bool>> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+        user.PasswordHash = _identityService.HashPassword(newPassword);
+
+        // Seguridad estricta: Invalidamos todas las sesiones abiertas en otros dispositivos
+        var tokens = await _db.RefreshTokens.Where(t => t.UserId == userId && !t.IsRevoked).ToListAsync();
+        tokens.ForEach(t => t.IsRevoked = true);
+
+        await _db.SaveChangesAsync();
+
+        await _publishEndpoint.Publish(new PasswordChangedEvent(user.Id, user.Email, DateTime.UtcNow));
+
+        return Result<bool>.Success(true);
+    }
+
+    public async Task<Result<bool>> RequestResetAsync(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return Result<bool>.Success(true);
+
+        // Limpieza de variable fuera de la lambda para garantizar el uso de índices de SQL Server
+        var normalizedEmail = email.Trim().ToLower();
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == normalizedEmail);
+        if (user == null) return Result<bool>.Success(true); // Retorno silencioso (Previene enumeración)
+
+        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+
+        _db.PasswordResetTokens.Add(new PasswordResetToken
         {
-            var user = await _db.Users.FindAsync(userId);
-            if (user == null || !_identityService.VerifyPassword(currentPassword, user.PasswordHash))
-                return Result<bool>.Failure("La contraseña actual es incorrecta.");
+            Id = Guid.NewGuid(),
+            Token = token,
+            UserId = user.Id,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(15),
+            IsUsed = false
+        });
 
-            user.PasswordHash = _identityService.HashPassword(newPassword);
+        await _db.SaveChangesAsync();
 
-            // Seguridad: Revocamos tokens de refresco al cambiar clave
-            var tokens = await _db.RefreshTokens.Where(t => t.UserId == userId).ToListAsync();
-            tokens.ForEach(t => t.IsRevoked = true);
+        await _publishEndpoint.Publish(new PasswordResetRequestedEvent(user.Id, user.Email, token, DateTime.UtcNow.AddMinutes(15)));
 
-            await _db.SaveChangesAsync();
+        return Result<bool>.Success(true);
+    }
 
-            await _publishEndpoint.Publish(new PasswordChangedEvent(user.Id, user.Email, DateTime.UtcNow));
+    /// <summary>
+    /// REGLA DE NEGOCIO: Ejecuta el reseteo de la clave e invalida de forma atómica todas las sesiones previas.
+    /// </summary>
+    public async Task<Result<bool>> ExecuteResetAsync(string token, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return Result<bool>.Failure("El token de recuperación provisto es inválido.");
 
-            return Result<bool>.Success(true);
-        }
+        // 1. Buscamos el token de recuperación y cargamos la navegación del usuario
+        var resetToken = await _db.PasswordResetTokens
+            .Include(t => t.User)
+            .FirstOrDefaultAsync(t => t.Token == token && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow);
 
-        public async Task<Result<bool>> RequestResetAsync(string email)
-        {
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email.Trim().ToLower());
-            if (user == null) return Result<bool>.Success(true); // Retorno silencioso por seguridad
+        if (resetToken == null)
+            return Result<bool>.Failure("El enlace de recuperación es inválido, ya fue utilizado o ha expirado.");
 
-            var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        // 2. Modificación criptográfica de credenciales
+        resetToken.User.PasswordHash = _identityService.HashPassword(newPassword);
+        resetToken.IsUsed = true;
 
-            _db.PasswordResetTokens.Add(new PasswordResetToken
-            {
-                Id = Guid.NewGuid(),
-                Token = token,
-                UserId = user.Id,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(15),
-                IsUsed = false
-            });
+        // 3. REGLA DE SEGURIDAD ADICIONAL: Expulsamos al usuario de todos sus dispositivos activos
+        var activeSessions = await _db.RefreshTokens
+            .Where(t => t.UserId == resetToken.UserId && !t.IsRevoked)
+            .ToListAsync();
 
-            await _db.SaveChangesAsync();
+        activeSessions.ForEach(t => t.IsRevoked = true);
 
-            await _publishEndpoint.Publish(new PasswordResetRequestedEvent(user.Id, user.Email, token, DateTime.UtcNow.AddMinutes(15)));
+        await _db.SaveChangesAsync();
 
-            return Result<bool>.Success(true);
-        }
+        // 4. Notificación asíncrona de cambio completado con éxito
+        await _publishEndpoint.Publish(new PasswordChangedEvent(resetToken.User.Id, resetToken.User.Email, DateTime.UtcNow));
 
-        public async Task<Result<bool>> ExecuteResetAsync(string token, string newPassword)
-        {
-            var resetToken = await _db.PasswordResetTokens
-                .Include(t => t.User)
-                .FirstOrDefaultAsync(t => t.Token == token && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow);
-
-            if (resetToken == null) return Result<bool>.Failure("Token inválido o expirado.");
-
-            resetToken.User.PasswordHash = _identityService.HashPassword(newPassword);
-            resetToken.IsUsed = true;
-
-            await _db.SaveChangesAsync();
-            return Result<bool>.Success(true);
-        }
+        return Result<bool>.Success(true);
     }
 }

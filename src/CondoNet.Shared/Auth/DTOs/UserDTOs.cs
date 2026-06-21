@@ -3,7 +3,9 @@
 public record CreateUserRequest(
     string Email,
     string Password,
-    string FullName
+    string FullName,
+    Guid OrganizationId,
+    Guid CondoId
 );
 
 public record UserResponse(

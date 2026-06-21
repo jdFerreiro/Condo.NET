@@ -61,9 +61,9 @@ namespace CondoNet.Auth.Infrastructure.Configurations
                 new Permission { Id = 2, Name = "Activos", Path = "/assets", Description = "Crear/Editar infraestructura", Image = "assets.png" },
                 new Permission { Id = 3, Name = "Estacionamiento", Path = "/parking", Description = "Alquilar puestos a externos", Image = "parking.png" },
                 new Permission { Id = 4, Name = "Facturación", Path = "/billing", Description = "Ver estados de cuenta", Image = "billing.png" },
-                new Permission { Id = 5, Name = "Residentes", Path = "/residents", Description = "Crear/Editar residentes", Image = "residents.png" }}  
+                new Permission { Id = 5, Name = "Residentes", Path = "/residents", Description = "Crear/Editar residentes", Image = "residents.png" }
             );
         }
-}
+    }
 
 }

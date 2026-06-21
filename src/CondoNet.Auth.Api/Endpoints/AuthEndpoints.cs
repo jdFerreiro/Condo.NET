@@ -5,13 +5,11 @@ namespace CondoNet.Auth.Api.Endpoints;
 
 public static class AuthEndpoints
 {
-
-
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/auth")
-            .WithTags("Autenticación");
+        var group = app.MapGroup("/api/auth").WithTags("Autenticación");
 
+        // Endpoint de Autenticación Principal (Acceso Público)
         group.MapPost("/login", async (LoginRequest request, IAuthService authService) =>
         {
             var result = await authService.LoginAsync(request);
@@ -23,6 +21,7 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .WithName("Login");
 
+        // Endpoint de Cierre de Sesión (Protegido por JWT, exento de ApiKey)
         group.MapPost("/logout", async (LogoutRequest request, ILogoutService logoutService) =>
         {
             var result = await logoutService.LogoutAsync(request.RefreshToken);
@@ -31,7 +30,10 @@ public static class AuthEndpoints
                 ? Results.NoContent()
                 : Results.BadRequest(result.Error);
         })
-        .RequireAuthorization("RequiredAnyRole") // Es buena práctica que el logout esté autenticado
+        // Exime a este endpoint del ApiKeyMiddleware (ya que el middleware valida context.GetEndpoint()?.Metadata.Get<AllowAnonymousAttribute>())
+        .AllowAnonymous()
+        // Fuerza a que requiera obligatoriamente un token JWT válido de usuario activo para ejecutarse
+        .RequireAuthorization("RequiredAnyRole")
         .WithName("Logout");
     }
 }

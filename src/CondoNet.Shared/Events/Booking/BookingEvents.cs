@@ -1,9 +1,8 @@
-using System;
-
 namespace CondoNet.Shared.Events.Booking
 {
     public class BookingCreatedEvent
     {
+        public Guid CorrelationId { get; init; }
         public Guid BookingId { get; set; }
         public Guid AssetId { get; set; }
         public Guid UserId { get; set; }
@@ -15,6 +14,7 @@ namespace CondoNet.Shared.Events.Booking
 
     public class BookingConfirmedEvent
     {
+        public Guid CorrelationId { get; init; }
         public Guid BookingId { get; set; }
         public Guid AssetId { get; set; }
         public Guid UserId { get; set; }
