@@ -1,5 +1,5 @@
 using CondoNet.Accounting.Core.Entities;
-using CondoNet.Accounting.Core.Repositories;
+using CondoNet.Accounting.Core.Interfaces.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace CondoNet.Accounting.Infrastructure.Repositories;

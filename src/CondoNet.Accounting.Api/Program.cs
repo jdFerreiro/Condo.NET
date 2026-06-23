@@ -1,6 +1,6 @@
 using CondoNet.Accounting.Api.Endpoints;
-using CondoNet.Accounting.Core.Repositories;
-using CondoNet.Accounting.Core.Services;
+using CondoNet.Accounting.Core.Interfaces.Repositories;
+using CondoNet.Accounting.Core.Interfaces.Services;
 using CondoNet.Accounting.Infrastructure.Persistence;
 using CondoNet.Accounting.Infrastructure.Repositories;
 using CondoNet.Accounting.Infrastructure.Services;

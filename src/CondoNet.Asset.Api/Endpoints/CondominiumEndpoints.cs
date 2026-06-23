@@ -1,108 +1,55 @@
-namespace CondoNet.Asset.Api.Endpoints
+using CondoNet.Asset.Core.Interfaces;
+using CondoNet.Shared.Asset.DTOs;
+
+namespace CondoNet.Asset.Api.Endpoints;
+
+public static class CondominiumEndpoints
 {
-    using CondoNet.Asset.Core.Entities;
-    using CondoNet.Asset.Infrastructure.Persistence;
-    using CondoNet.Shared.Asset.Events;
-    using CondoNet.Shared.Interfaces;
-    using MassTransit;
-    using Microsoft.AspNetCore.Builder;
-    using Microsoft.AspNetCore.Http;
-    using Microsoft.AspNetCore.Routing;
-    using Microsoft.EntityFrameworkCore;
-
-    public static class CondominiumEndpoints
+    public static void MapCondominiumEndpoints(this IEndpointRouteBuilder app)
     {
-        public static void MapCondominiumEndpoints(this IEndpointRouteBuilder app)
+        var group = app.MapGroup("/api/assets/condominiums")
+                       .WithTags("Estructura - Condominios");
+
+        // POST: Dar de alta un condominio en la Organización del administrador logueado
+        group.MapPost("/", async (CreateCondominiumRequest request, ICondominiumService service) =>
         {
-            var group = app.MapGroup("/api/assets/condominiums")
-                .WithTags("Condominiums"); // Aplica la directiva de Admin
+            var result = await service.CreateCondominiumAsync(request);
+            return result.IsSuccess
+                ? Results.Created($"/api/assets/condominiums/{result.Value}", new { Id = result.Value })
+                : Results.BadRequest(result.Error);
+        })
+        .RequireAuthorization("RequireAdminRole");
 
+        // GET: Detalle de un condominio específico (Valida aislamiento interno en el servicio)
+        group.MapGet("/{id:guid}", async (Guid id, ICondominiumService service) =>
+        {
+            var result = await service.GetCondominiumByIdAsync(id);
+            return result.IsSuccess ? Results.Ok(result.Value) : Results.NotFound(result.Error);
+        })
+        .RequireAuthorization("RequiredAnyRole");
 
-            group.MapGet("", async (AssetDbContext context, ITenantService tenantService) =>
-            {
-                var organizationId = tenantService.GetOrganizationId();
+        // GET: Listar todos los condominios que administra la organización activa del token
+        group.MapGet("/", async (ICondominiumService service) =>
+        {
+            var result = await service.GetCondominiumsByOrganizationAsync();
+            return Results.Ok(result.Value);
+        })
+        .RequireAuthorization("RequireAdminRole");
 
-                var data = await context.Condominiums
-                                .Where(c => c.OrganizationId == organizationId)
-                                .AsNoTracking()
-                                .ToListAsync();
+        // PUT: Actualizar datos de infraestructura o porcentaje de fondo de reserva
+        group.MapPut("/{id:guid}", async (Guid id, UpdateCondominiumRequest request, ICondominiumService service) =>
+        {
+            var result = await service.UpdateCondominiumAsync(id, request);
+            return result.IsSuccess ? Results.NoContent() : Results.BadRequest(result.Error);
+        })
+        .RequireAuthorization("RequireAdminRole");
 
-                return Results.Ok(data);
-            })
-            .RequireAuthorization("RequiredAnyRole");
-
-            group.MapGet("/{id:guid}", async (Guid id, AssetDbContext context, ITenantService tenantService) =>
-            {
-                var organizationId = tenantService.GetOrganizationId();
-                var entity = await context.Condominiums
-                                        .AsNoTracking()
-                                        .FirstOrDefaultAsync(x => x.Id == id && x.OrganizationId == organizationId);
-                return entity is not null ? Results.Ok(entity) : Results.NotFound();
-            })
-            .RequireAuthorization("");
-
-            group.MapPost("", async (CreateCondominiumRequest request, AssetDbContext context, IPublishEndpoint publishEndpoint, ITenantService tenantService) =>
-            {
-                var entity = new Condominium
-                {
-                    Name = request.Name,
-                    Address = request.Address
-                };
-
-                context.Condominiums.Add(entity);
-                await context.SaveChangesAsync();
-
-                var organizationId = tenantService.GetOrganizationId();
-                var organization = await context.Organizations.AsNoTracking().FirstOrDefaultAsync(x => x.Id == organizationId);
-
-                await publishEndpoint.Publish(new CondominiumCreated(
-                    organizationId,
-                    entity.Id,
-                    entity.Name,
-                    organization?.TaxId ?? string.Empty,
-                    organization?.BaseCurrency ?? "USD",
-                    0m
-                ));
-
-                return Results.Created($"/api/assets/condominiums/{entity.Id}", entity);
-            })
-                .RequireAuthorization("RequireAdminRole");
-
-            group.MapPut("/{id:guid}", async (Guid id, UpdateCondominiumRequest request, AssetDbContext context, IPublishEndpoint publishEndpoint, ITenantService tenantService) =>
-            {
-                var entity = await context.Condominiums.FirstOrDefaultAsync(x => x.Id == id);
-                if (entity is null) return Results.NotFound();
-
-                entity.Name = request.Name;
-                entity.Address = request.Address;
-
-                await context.SaveChangesAsync();
-
-                await publishEndpoint.Publish(new CondominiumUpdated(
-                    tenantService.GetOrganizationId(),
-                    entity.Id,
-                    entity.Name,
-                    0m
-                ));
-
-                return Results.Ok(entity);
-            })
-                .RequireAuthorization("RequireAdminRole");
-
-            group.MapDelete("/{id:guid}", async (Guid id, AssetDbContext context) =>
-            {
-                var entity = await context.Condominiums.FirstOrDefaultAsync(x => x.Id == id);
-                if (entity is null) return Results.NotFound();
-
-                context.Condominiums.Remove(entity);
-                await context.SaveChangesAsync();
-                return Results.NoContent();
-            })
-            .RequireAuthorization("RequireAdminRole");
-
-        }
-
-        private sealed record CreateCondominiumRequest(string Name, string Address);
-        private sealed record UpdateCondominiumRequest(string Name, string Address);
+        // DELETE: Remover un condominio (Valida integridad de unidades en el servicio)
+        group.MapDelete("/{id:guid}", async (Guid id, ICondominiumService service) =>
+        {
+            var result = await service.DeleteCondominiumAsync(id);
+            return result.IsSuccess ? Results.NoContent() : Results.BadRequest(result.Error);
+        })
+        .RequireAuthorization("RequireAdminRole");
     }
 }

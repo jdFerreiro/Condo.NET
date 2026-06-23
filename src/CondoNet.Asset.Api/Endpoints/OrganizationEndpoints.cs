@@ -1,75 +1,56 @@
-using CondoNet.Asset.Core.Entities;
-using CondoNet.Asset.Infrastructure.Persistence;
-using CondoNet.Shared.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using CondoNet.Asset.Core.Interfaces;
+using CondoNet.Shared.Asset.DTOs;
+using Microsoft.AspNetCore.Mvc;
 
-namespace CondoNet.Asset.Api.Endpoints
+namespace CondoNet.Asset.Api.Endpoints;
+
+public static class OrganizationEndpoints
 {
-    public static class OrganizationEndpoints
+    public static void MapOrganizationEndpoints(this IEndpointRouteBuilder app)
     {
-        public static void MapOrganizationEndpoints(this IEndpointRouteBuilder app)
+        var group = app.MapGroup("/api/assets/organizations")
+                       .WithTags("Estructura - Organizaciones");
+
+        // POST: Registrar una nueva empresa administradora global (Acceso SuperAdmin)
+        group.MapPost("/", async (RegisterOrganizationRequest request, IOrganizationService service) =>
         {
-            var group = app.MapGroup("/api/assets/organizations")
-                .WithTags("Organizations")
-                .RequireAuthorization("RequireAdminRole");
+            var result = await service.RegisterOrganizationAsync(request);
+            return result.IsSuccess
+                ? Results.Created($"/api/assets/organizations/{result.Value}", new { Id = result.Value })
+                : Results.BadRequest(result.Error);
+        })
+        .RequireAuthorization("RequireAdminRole");
 
-            group.MapGet("", async (AssetDbContext context, ITenantService tenantService) =>
-            {
-                var organizationId = tenantService.GetOrganizationId();
+        // GET: Obtener el perfil de la organización por ID
+        group.MapGet("/{id:guid}", async (Guid id, IOrganizationService service) =>
+        {
+            var result = await service.GetOrganizationByIdAsync(id);
+            return result.IsSuccess ? Results.Ok(result.Value) : Results.NotFound(result.Error);
+        })
+        .RequireAuthorization("RequiredAnyRole");
 
-                var organizations = await context.Organizations
-                    .AsNoTracking()
-                    .Where(x => x.Id == organizationId)
-                    .ToListAsync();
+        // PUT: Actualizar datos comerciales de contacto
+        group.MapPut("/{id:guid}", async (Guid id, UpdateOrgRequest request, IOrganizationService service) =>
+        {
+            var result = await service.UpdateOrganizationAsync(id, request);
+            return result.IsSuccess ? Results.NoContent() : Results.BadRequest(result.Error);
+        })
+        .RequireAuthorization("RequireAdminRole");
 
-                return Results.Ok(organizations);
-            })
-            .WithName("GetOrganizations");
+        // PUT (SaaS): Modificar el plan de suscripción (Free, Premium, etc.)
+        group.MapPut("/{id:guid}/plan", async (Guid id, [FromQuery] int plan, IOrganizationService service) =>
+        {
+            var result = await service.UpdateSubscriptionPlanAsync(id, plan);
+            return result.IsSuccess ? Results.NoContent() : Results.BadRequest(result.Error);
+        })
+        .RequireAuthorization("RequireAdminRole");
 
-            group.MapGet("/{id:guid}", async (Guid id, AssetDbContext context, ITenantService tenantService) =>
-            {
-                var organizationId = tenantService.GetOrganizationId();
-                if (id != organizationId)
-                {
-                    return Results.NotFound();
-                }
-
-                var organization = await context.Organizations
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.Id == id);
-
-                return organization is not null ? Results.Ok(organization) : Results.NotFound();
-            })
-            .WithName("GetOrganizationById");
-
-            group.MapPut("/{id:guid}", async (Guid id, Organization request, AssetDbContext context, ITenantService tenantService) =>
-            {
-                var organizationId = tenantService.GetOrganizationId();
-                if (id != organizationId)
-                {
-                    return Results.NotFound();
-                }
-
-                var entity = await context.Organizations.FirstOrDefaultAsync(x => x.Id == id);
-                if (entity is null)
-                {
-                    return Results.NotFound();
-                }
-
-                entity.Name = request.Name;
-                entity.TaxId = request.TaxId;
-                entity.LogoUrl = request.LogoUrl;
-                entity.BaseCurrency = request.BaseCurrency;
-                entity.ContactEmail = request.ContactEmail;
-                entity.PhoneNumber = request.PhoneNumber;
-                entity.Plan = request.Plan;
-                entity.IsActive = request.IsActive;
-
-                await context.SaveChangesAsync();
-
-                return Results.Ok(entity);
-            })
-            .WithName("UpdateOrganization");
-        }
+        // PATCH: Activar/Suspender de forma lógica las operaciones de la empresa
+        group.MapPatch("/{id:guid}/status", async (Guid id, [FromQuery] bool active, IOrganizationService service) =>
+        {
+            var result = await service.ToggleOrganizationStatusAsync(id, active);
+            return result.IsSuccess ? Results.NoContent() : Results.BadRequest(result.Error);
+        })
+        .RequireAuthorization("RequireAdminRole");
     }
 }

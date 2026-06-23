@@ -1,5 +1,5 @@
 using CondoNet.Accounting.Core.Entities;
-using CondoNet.Accounting.Core.Repositories;
+using CondoNet.Accounting.Core.Interfaces.Repositories;
 
 namespace CondoNet.Accounting.Api.Endpoints;
 

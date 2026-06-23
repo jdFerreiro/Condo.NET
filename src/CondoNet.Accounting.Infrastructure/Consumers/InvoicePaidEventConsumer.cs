@@ -1,7 +1,7 @@
 using CondoNet.Shared.Events.Payments;
 using CondoNet.Accounting.Core.Entities;
-using CondoNet.Accounting.Core.Services;
 using MassTransit;
+using CondoNet.Accounting.Core.Interfaces.Services;
 
 namespace CondoNet.Accounting.Infrastructure.Consumers;
 

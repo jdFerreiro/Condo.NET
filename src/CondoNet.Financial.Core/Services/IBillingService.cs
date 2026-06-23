@@ -1,4 +1,4 @@
-﻿using CondoNet.Shared.DTOs.Financial;
+﻿using CondoNet.Shared.Financial.DTOs;
 
 namespace CondoNet.Financial.Core.Services
 {

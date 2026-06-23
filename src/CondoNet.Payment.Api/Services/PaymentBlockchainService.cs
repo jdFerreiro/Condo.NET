@@ -1,5 +1,6 @@
 using CondoNet.BlockChain.Core;
-using CondoNet.Shared.DTOs.Financial;
+using CondoNet.Shared.Financial.DTOs;
+using CondoNet.Shared.Payment.DTOs;
 
 namespace CondoNet.Payment.Api.Services;
 

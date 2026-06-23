@@ -1,4 +1,5 @@
 ﻿using CondoNet.Auth.Core.Interfaces;
+using CondoNet.Shared;
 using CondoNet.Shared.Auth.DTOs;
 using System.Security.Claims;
 

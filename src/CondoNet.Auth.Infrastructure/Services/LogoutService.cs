@@ -1,6 +1,6 @@
 ﻿using CondoNet.Auth.Core.Interfaces;
 using CondoNet.Auth.Infrastructure.Persistence;
-using CondoNet.Shared.Auth.DTOs;
+using CondoNet.Shared;
 using CondoNet.Shared.Auth.Events;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;

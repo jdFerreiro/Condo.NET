@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
-using CondoNet.Shared.DTOs.Financial;
+using CondoNet.Shared.Financial.DTOs;
+using CondoNet.Shared.Payment.DTOs;
 
 namespace CondoNet.BlockChain.Core;
 

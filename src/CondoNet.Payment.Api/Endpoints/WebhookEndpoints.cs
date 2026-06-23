@@ -1,4 +1,4 @@
-using CondoNet.Shared.DTOs.Payment;
+using CondoNet.Shared.Payment.DTOs;
 using Microsoft.AspNetCore.Http;
 
 namespace CondoNet.Payment.Api.Endpoints;
@@ -10,7 +10,7 @@ public static class WebhookEndpoints
         app.MapPost("/webhooks/{gateway}", async (string gateway, WebhookEventDto dto, IServiceProvider sp, CancellationToken ct) =>
         {
             // Ejemplo: convertir el payload del webhook a RegisterPaymentDto
-            var paymentDto = System.Text.Json.JsonSerializer.Deserialize<CondoNet.Shared.DTOs.Financial.RegisterPaymentDto>(dto.Payload);
+            var paymentDto = System.Text.Json.JsonSerializer.Deserialize<RegisterPaymentDto>(dto.Payload);
             if (paymentDto == null)
                 return Results.BadRequest("Payload inválido para registrar pago en blockchain.");
 

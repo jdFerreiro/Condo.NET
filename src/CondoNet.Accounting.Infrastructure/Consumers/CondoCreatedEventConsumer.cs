@@ -1,11 +1,12 @@
-using CondoNet.Shared.Events.Asset;
 using CondoNet.Accounting.Core.Entities;
-using CondoNet.Accounting.Core.Repositories;
+using CondoNet.Accounting.Core.Interfaces.Repositories;
+using CondoNet.Shared.Asset.Events;
 using MassTransit;
+using static CondoNet.Accounting.Core.Entities.Account;
 
 namespace CondoNet.Accounting.Infrastructure.Consumers;
 
-public class CondoCreatedEventConsumer : IConsumer<CondoCreatedEvent>
+public class CondoCreatedEventConsumer : IConsumer<CondominiumCreatedEvent>
 {
     private readonly IAccountRepository _accountRepository;
 
@@ -14,17 +15,17 @@ public class CondoCreatedEventConsumer : IConsumer<CondoCreatedEvent>
         _accountRepository = accountRepository;
     }
 
-    public async Task Consume(ConsumeContext<CondoCreatedEvent> context)
+    public async Task Consume(ConsumeContext<CondominiumCreatedEvent> context)
     {
         var evt = context.Message;
 
         var accounts = new List<Account>
         {
-            new() { Id = Guid.NewGuid(), OrganizationId = evt.OrganizationId, CondominiumId = evt.CondominiumId, Code = "1", Name = "Activo", Type = "Activo", IsActive = true, Balance = 0 },
-            new() { Id = Guid.NewGuid(), OrganizationId = evt.OrganizationId, CondominiumId = evt.CondominiumId, Code = "2", Name = "Pasivo", Type = "Pasivo", IsActive = true, Balance = 0 },
-            new() { Id = Guid.NewGuid(), OrganizationId = evt.OrganizationId, CondominiumId = evt.CondominiumId, Code = "3", Name = "Patrimonio", Type = "Patrimonio", IsActive = true, Balance = 0 },
-            new() { Id = Guid.NewGuid(), OrganizationId = evt.OrganizationId, CondominiumId = evt.CondominiumId, Code = "4", Name = "Ingreso", Type = "Ingreso", IsActive = true, Balance = 0 },
-            new() { Id = Guid.NewGuid(), OrganizationId = evt.OrganizationId, CondominiumId = evt.CondominiumId, Code = "5", Name = "Gasto", Type = "Gasto", IsActive = true, Balance = 0 }
+            new() { Id = Guid.NewGuid(), OrganizationId = evt.OrganizationId, CondominiumId = evt.CondominiumId, Code = "1", Name = "Activo", Type = AccountType.Asset, IsActive = true, CurrentBalance = 0, IsTransactional = false, ParentAccountId = null },
+            new() { Id = Guid.NewGuid(), OrganizationId = evt.OrganizationId, CondominiumId = evt.CondominiumId, Code = "2", Name = "Pasivo", Type = AccountType.Liability, IsActive = true, CurrentBalance = 0, IsTransactional = false, ParentAccountId = null },
+            new() { Id = Guid.NewGuid(), OrganizationId = evt.OrganizationId, CondominiumId = evt.CondominiumId, Code = "3", Name = "Patrimonio", Type = AccountType.Equity, IsActive = true, CurrentBalance = 0, IsTransactional = false, ParentAccountId = null },
+            new() { Id = Guid.NewGuid(), OrganizationId = evt.OrganizationId, CondominiumId = evt.CondominiumId, Code = "4", Name = "Ingreso", Type = AccountType.Revenue, IsActive = true, CurrentBalance = 0, IsTransactional = false, ParentAccountId = null },
+            new() { Id = Guid.NewGuid(), OrganizationId = evt.OrganizationId, CondominiumId = evt.CondominiumId, Code = "5", Name = "Gasto", Type = AccountType.Expense, IsActive = true, CurrentBalance = 0, IsTransactional = false, ParentAccountId = null }
         };
 
         foreach (var account in accounts)

@@ -1,8 +1,9 @@
 
 using CondoNet.BlockChain.Core;
-using CondoNet.Shared.DTOs.Financial;
 using Nethereum.Web3;
 using CondoNet.BlockChain.Infrastructure.ContractDefinition;
+using CondoNet.Shared.Financial.DTOs;
+using CondoNet.Shared.Payment.DTOs;
 
 namespace CondoNet.BlockChain.Infrastructure;
 

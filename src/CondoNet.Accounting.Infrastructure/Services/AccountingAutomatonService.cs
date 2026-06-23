@@ -1,6 +1,6 @@
 using CondoNet.Accounting.Core.Entities;
-using CondoNet.Accounting.Core.Repositories;
-using CondoNet.Accounting.Core.Services;
+using CondoNet.Accounting.Core.Interfaces.Repositories;
+using CondoNet.Accounting.Core.Interfaces.Services;
 
 namespace CondoNet.Accounting.Infrastructure.Services;
 
@@ -36,12 +36,12 @@ public class AccountingAutomatonService : IAccountingAutomatonService
                 throw new InvalidOperationException($"La cuenta {entry.AccountId} no existe o está inactiva.");
 
             // Actualizar saldo
-            account.Balance += entry.Debit - entry.Credit;
+            account.CurrentBalance += AccountingService.CalculateBalanceImpact(account.Type, entry.Debit, entry.Credit);
             await _accountRepository.UpdateAsync(account);
         }
 
         // Registrar transacción y asientos
-        transaction.CreatedBy = userId;
+        transaction.CreatedBy = userId.ToString();
         transaction.CreatedAt = DateTime.UtcNow;
         await _transactionRepository.AddAsync(transaction);
         foreach (var entry in transaction.Entries)

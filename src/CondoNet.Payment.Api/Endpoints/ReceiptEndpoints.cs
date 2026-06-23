@@ -1,4 +1,4 @@
-using CondoNet.Shared.DTOs.Payment;
+using CondoNet.Shared.Payment.DTOs;
 
 namespace CondoNet.Payment.Api.Endpoints;
 

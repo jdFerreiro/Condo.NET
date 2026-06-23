@@ -129,13 +129,12 @@ try
 
     app.UseMiddleware<ApiKeyMiddleware>();
 
-    app.MapAssetEndpoints();
-    app.MapCommonAssetEndpoints();
+    app.MapHealthChecks("/health");
+
     app.MapOrganizationEndpoints();
     app.MapCondominiumEndpoints();
-    app.MapCriticalEquipmentEndpoints();
-    app.MapTowerEndpoints();
-    app.MapUnitEndpoints();
+    app.MapTowerAndUnitEndpoints();
+    app.MapInventoryAssetEndpoints();
 
     app.Run();
 }

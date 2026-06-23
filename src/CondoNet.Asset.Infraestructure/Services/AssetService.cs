@@ -3,81 +3,110 @@ using CondoNet.Asset.Core.Interfaces;
 using CondoNet.Asset.Infrastructure.Persistence;
 using CondoNet.Shared.Asset.DTOs;
 using CondoNet.Shared.Asset.Events;
+using CondoNet.Shared.Interfaces;
 using MassTransit;
+using Microsoft.AspNetCore.Http; // <-- Indispensable para HttpContext
 using Microsoft.EntityFrameworkCore;
 
-namespace CondoNet.Asset.Infrastructure.Services
+namespace CondoNet.Asset.Infrastructure.Services;
+
+// CONSTRUCTOR PRIMARIO: Inyectamos IHttpContextAccessor manteniendo limpia la sintaxis sin warnings CS9124
+public class AssetService(
+    AssetDbContext context,
+    IPublishEndpoint publishEndpoint,
+    ITenantService tenantService,
+    IHttpContextAccessor httpContextAccessor) : IAssetService
 {
-    public class AssetService(AssetDbContext context, IPublishEndpoint publishEndpoint) : IAssetService
+    public async Task<bool> BulkImportUnitsAsync(BulkImportRequest request)
     {
-        private readonly AssetDbContext _context = context;
-        private readonly IPublishEndpoint _publishEndpoint = publishEndpoint; // 1. Inyectamos el endpoint de publicación
+        var tenantOrgId = tenantService.GetOrganizationId();
+        var tenantCondoId = tenantService.GetCondominiumId();
 
-        public async Task<bool> BulkImportUnitsAsync(BulkImportRequest request)
+        if (tenantCondoId != request.CondominiumId)
         {
-            // 1. Validación de la Regla de Oro (Pág. 22)
-            decimal totalAliquot = request.Units.Sum(u => u.Aliquot);
+            throw new UnauthorizedAccessException("Operación rechazada: No tiene permisos sobre este condominio.");
+        }
 
-            if (totalAliquot != 100.0000m)
-            {
-                throw new InvalidOperationException($"La suma de alícuotas es {totalAliquot}%. Debe ser exactamente 100.0000%.");
-            }
+        // Regla de Oro: Suma exacta de alícuotas del lote = 100.0000%
+        decimal totalAliquot = request.Units.Sum(u => u.Aliquot);
+        if (totalAliquot != 100.0000m)
+        {
+            throw new InvalidOperationException($"La suma de alícuotas es {totalAliquot}%. Debe ser exactamente 100.0000%.");
+        }
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
+        var strategy = context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            using var transaction = await context.Database.BeginTransactionAsync();
             try
             {
-                // 2. Procesar Torres (Asegurar que existan o crearlas)
-                var towerNames = request.Units.Select(u => u.TowerName).Distinct();
-                var towers = new List<Tower>();
+                // Carga masiva de torres existentes para optimización de consultas (Evita el problema N+1)
+                var existingTowers = await context.Towers
+                    .Where(t => t.CondominiumId == request.CondominiumId)
+                    .ToListAsync();
 
-                foreach (var name in towerNames)
+                var uniqueTowerNames = request.Units
+                    .Select(u => u.TowerName.Trim().ToUpper())
+                    .Distinct()
+                    .ToList();
+
+                var finalTowersMap = new List<Tower>(existingTowers);
+
+                var towersToCreate = uniqueTowerNames
+                    .Where(name => !existingTowers.Any(et => et.Name.Trim().ToUpper() == name))
+                    .Select(name => new Tower { Id = Guid.NewGuid(), Name = name, CondominiumId = request.CondominiumId, OrganizationId = tenantOrgId })
+                    .ToList();
+
+                if (towersToCreate.Count > 0)
                 {
-                    var tower = await _context.Towers
-                        .FirstOrDefaultAsync(t => t.Name == name && t.CondominiumId == request.CondominiumId);
-
-                    if (tower == null)
-                    {
-                        tower = new Tower { Name = name, CondominiumId = request.CondominiumId };
-                        _context.Towers.Add(tower);
-                        await _context.SaveChangesAsync(); // Para obtener el Id de la nueva torre
-                    }
-                    towers.Add(tower);
+                    await context.Towers.AddRangeAsync(towersToCreate);
+                    await context.SaveChangesAsync();
+                    finalTowersMap.AddRange(towersToCreate);
                 }
 
-                // 3. Crear Unidades
-                // Proyectamos a una lista física (.ToList()) para poder iterar y leer los IDs generados después del SaveChanges
-                var unitsToInsert = request.Units.Select(dto => new Unit
+                // Creación de lote de Unidades inmobiliarias mapeando campos obligatorios
+                var unitsToInsert = request.Units.Select(dto =>
                 {
-                    Identifier = dto.Identifier,
-                    Aliquot = dto.Aliquot,
-                    Type = dto.Type,
-                    OwnerEmail = dto.OwnerEmail,
-                    TowerId = towers.First(t => t.Name == dto.TowerName).Id,
+                    var normalizedName = dto.TowerName.Trim().ToUpper();
+                    var towerTarget = finalTowersMap.First(t => t.Name.Trim().ToUpper() == normalizedName);
+
+                    return new Core.Entities.Unit
+                    {
+                        Id = Guid.NewGuid(),
+                        Identifier = dto.Identifier.Trim(),
+                        Floor = dto.Floor?.Trim() ?? "1",
+                        Aliquot = dto.Aliquot,
+                        Type = dto.Type,
+                        Alias = dto.Alias?.Trim(),
+                        AreaSquareMeters = dto.AreaSquareMeters,
+                        LinkedAssets = [],
+                        OwnerEmail = dto.OwnerEmail.Trim().ToLower(),
+                        TowerId = towerTarget.Id, // REGLA DE RENDIMIENTO: Mapeamos solo el Id para acelerar el guardado masivo
+                        OrganizationId = tenantOrgId
+                    };
                 }).ToList();
 
-                await _context.Units.AddRangeAsync(unitsToInsert);
-                await _context.SaveChangesAsync();
+                await context.Units.AddRangeAsync(unitsToInsert);
+                await context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                // 4. EMISIÓN DEL EVENTO (Consistencia Eventual)
-                // Se ejecuta fuera del bloque try/catch transaccional para que solo ocurra tras el commit exitoso
+                // Consistencia Eventual masiva
+                var eventUnits = unitsToInsert.Select(u => new ImportedUnitDto(u.Id, u.Identifier, u.Aliquot, u.OwnerEmail)).ToList();
 
-                // Extraemos el OrganizationId de la primera unidad generada por el interceptor de EF Core
-                var organizationId = unitsToInsert.First().OrganizationId;
-
-                var eventUnits = unitsToInsert.Select(u => new ImportedUnitDto(
-                    u.Id,
-                    u.Identifier,
-                    u.Aliquot,
-                    u.OwnerEmail
-                )).ToList();
-
-                await _publishEndpoint.Publish(new UnitsImported(
-                    organizationId,
-                    request.CondominiumId,
-                    eventUnits
-                ));
+                // REGLA DE TRAZABILIDAD: Despachamos el evento inyectando el CorrelationId de la petición web original
+                await publishEndpoint.Publish(new UnitsImported(tenantOrgId, request.CondominiumId, eventUnits), contextEnvelope =>
+                {
+                    var httpContext = httpContextAccessor.HttpContext;
+                    if (httpContext != null && httpContext.Request.Headers.TryGetValue("X-Correlation-ID", out var correlationId))
+                    {
+                        // Estampamos el ID HTTP original en los metadatos de las cabeceras de RabbitMQ
+                        contextEnvelope.CorrelationId = Guid.TryParse(correlationId.ToString(), out var parsedId) ? parsedId : Guid.NewGuid();
+                    }
+                    else
+                    {
+                        contextEnvelope.CorrelationId = Guid.NewGuid();
+                    }
+                });
 
                 return true;
             }
@@ -86,7 +115,6 @@ namespace CondoNet.Asset.Infrastructure.Services
                 await transaction.RollbackAsync();
                 throw;
             }
-        }
+        });
     }
-
 }

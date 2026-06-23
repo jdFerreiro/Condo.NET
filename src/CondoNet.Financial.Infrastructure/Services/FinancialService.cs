@@ -2,7 +2,8 @@ using CondoNet.BlockChain.Core;
 using CondoNet.Financial.Core.Entities;
 using CondoNet.Financial.Core.Interfaces;
 using CondoNet.Financial.Core.Services;
-using CondoNet.Shared.DTOs.Financial;
+using CondoNet.Shared.Financial.DTOs;
+using CondoNet.Shared.Payment.DTOs;
 using MassTransit;
 
 namespace CondoNet.Financial.Infrastructure.Services
@@ -174,7 +175,7 @@ namespace CondoNet.Financial.Infrastructure.Services
                     ExchangeRateApplied = 0, // Ajusta según la tasa usada
                     ValidationTimestamp = DateTime.UtcNow,
                     IsBalanceCleared = (remainingDebtUSD == 0),
-                    CorrelationId = Guid.NewGuid().ToString()
+                    CorrelationId = Guid.NewGuid()
                 }, cancellationToken);
             }
 

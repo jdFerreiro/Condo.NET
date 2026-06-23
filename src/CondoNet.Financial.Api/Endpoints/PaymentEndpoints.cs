@@ -1,6 +1,6 @@
 using CondoNet.Financial.Core.Interfaces;
 using CondoNet.Financial.Core.Services;
-using CondoNet.Shared.DTOs.Financial;
+using CondoNet.Shared.Payment.DTOs;
 
 namespace CondoNet.Financial.Api.Endpoints;
 
