@@ -1,50 +1,83 @@
-using CondoNet.Accounting.Core.Entities;
-using CondoNet.Accounting.Core.Interfaces.Repositories;
+using CondoNet.Accounting.Core.Interfaces.Services;
+using CondoNet.Shared.Accounting.DTOs;
+using Microsoft.AspNetCore.Mvc;
 
-namespace CondoNet.Accounting.Api.Endpoints;
-
-public static class AccountEndpoints
+namespace CondoNet.Accounting.Api.Endpoints
 {
-    public static void MapAccountEndpoints(this IEndpointRouteBuilder app)
+    public static class AccountEndpoints
     {
-        var group = app.MapGroup("/accounts")
-            .WithTags("Gestión de cuentas");
-
-
-        group.MapGet("/", async (IAccountRepository repo, CondoNet.Shared.Interfaces.ITenantService tenantService) =>
+        public static IEndpointRouteBuilder MapAccountEndpoints(this IEndpointRouteBuilder app)
         {
-            var organizationId = tenantService.GetOrganizationId();
-            var condominiumId = tenantService.GetCondominiumId();
-            var accounts = await repo.GetAllAsync(organizationId, condominiumId);
-            return Results.Ok(accounts);
-        });
+            // Eliminamos .WithOpenApi() para corregir la advertencia de .NET 9
+            var group = app.MapGroup("api/v1/accounting/accounts")
+                .WithTags("Accounting - Accounts");
 
-        group.MapGet("/{id}", async (Guid id, IAccountRepository repo) =>
-        {
-            var account = await repo.GetByIdAsync(id);
-            return account is not null ? Results.Ok(account) : Results.NotFound();
-        });
+            // 1. REGISTRAR UNA NUEVA CUENTA CONTABLE
+            group.MapPost("", async (
+                [FromBody] CreateAccountRequest request,
+                IAccountingService accountingService) =>
+            {
+                var result = await accountingService.CreateAccountAsync(request);
 
+                return result.IsSuccess
+                    ? Results.Created($"/api/v1/accounting/accounts", result.Value)
+                    : Results.BadRequest(result.Error);
+            });
 
-        group.MapPost("/", async (Account account, IAccountRepository repo, CondoNet.Shared.Interfaces.ITenantService tenantService) =>
-        {
-            account.OrganizationId = tenantService.GetOrganizationId();
-            account.CondominiumId = tenantService.GetCondominiumId();
-            await repo.AddAsync(account);
-            return Results.Created($"/accounts/{account.Id}", account);
-        });
+            // 2. OBTENER EL PLAN DE CUENTAS COMPLETO DEL CONDOMINIO
+            group.MapGet("", async (IAccountingService accountingService) =>
+            {
+                var result = await accountingService.GetAccountsByCondoAsync();
+                return Results.Ok(result.Value);
+            });
 
-        group.MapPut("/{id}", async (Guid id, Account account, IAccountRepository repo) =>
-        {
-            account.Id = id;
-            await repo.UpdateAsync(account);
-            return Results.NoContent();
-        });
+            // 3. MODIFICAR ATRIBUTOS DESCRIPTIVOS DE UNA CUENTA
+            group.MapPut("{id:guid}", async (
+                Guid id,
+                [FromBody] UpdateAccountRequest request,
+                IAccountingService accountingService) =>
+            {
+                var result = await accountingService.UpdateAccountAsync(id, request);
 
-        group.MapDelete("/{id}", async (Guid id, IAccountRepository repo) =>
-        {
-            await repo.DeleteAsync(id);
-            return Results.NoContent();
-        });
+                return result.IsSuccess
+                    ? Results.Ok(result.Value)
+                    : Results.BadRequest(result.Error);
+            });
+
+            // 4. CONMUTAR ESTADO (ACTIVAR / DESACTIVAR CUENTA)
+            group.MapPatch("{id:guid}/toggle-status", async (
+                Guid id,
+                [FromQuery] bool isActive,
+                IAccountingService accountingService) =>
+            {
+                var result = await accountingService.ToggleAccountStatusAsync(id, isActive);
+
+                return result.IsSuccess
+                    ? Results.Ok(result.Value)
+                    : Results.BadRequest(result.Error);
+            });
+
+            group.MapPost("tree", async (
+                [FromBody] CreateAccountRequest request,
+                IAccountingService accountingService) =>
+            {
+                // Dispara el servicio con todas las reglas de oro jerárquicas y de codificación
+                var result = await accountingService.AddAccountToTreeAsync(request);
+
+                return result.IsSuccess
+                    ? Results.Created($"/api/v1/accounting/accounts", result.Value)
+                    : Results.BadRequest(result.Error);
+            });
+
+            group.MapGet("tree", async (IAccountingService accountingService) =>
+            {
+                var result = await accountingService.GetAccountTreeAsync();
+
+                // Retorna el árbol contable completamente estructurado en formato jerárquico
+                return Results.Ok(result.Value);
+            });
+
+            return app;
+        }
     }
 }

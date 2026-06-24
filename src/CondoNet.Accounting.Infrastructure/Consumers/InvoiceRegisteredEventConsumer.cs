@@ -1,7 +1,7 @@
-using CondoNet.Shared.Events.Payments;
 using CondoNet.Accounting.Core.Entities;
-using MassTransit;
 using CondoNet.Accounting.Core.Interfaces.Services;
+using CondoNet.Shared.Events.Payments;
+using MassTransit;
 
 namespace CondoNet.Accounting.Infrastructure.Consumers;
 
@@ -23,7 +23,7 @@ public class InvoiceRegisteredEventConsumer : IConsumer<InvoiceRegisteredEvent>
             Id = Guid.NewGuid(),
             Date = evt.RegisteredAt,
             Description = $"Registro de factura {evt.InvoiceId} - {evt.Description}",
-            Reference = evt.Reference,
+            Number = evt.Reference,
             Entries = new List<AccountingEntry>()
             {
                 // Debe: Gasto (ejemplo, ajustar AccountId real)

@@ -1,7 +1,7 @@
-using CondoNet.Shared.Events.Payments;
 using CondoNet.Accounting.Core.Entities;
-using MassTransit;
 using CondoNet.Accounting.Core.Interfaces.Services;
+using CondoNet.Shared.Events.Payments;
+using MassTransit;
 
 namespace CondoNet.Accounting.Infrastructure.Consumers;
 
@@ -23,7 +23,7 @@ public class InvoicePaidEventConsumer : IConsumer<InvoicePaidEvent>
             Id = Guid.NewGuid(),
             Date = evt.PaidAt,
             Description = $"Pago de factura {evt.InvoiceId} por {evt.Amount}",
-            Reference = evt.PaymentReference,
+            Number = evt.PaymentReference,
             Entries = new List<AccountingEntry>()
             {
                 // Ejemplo: Cargo a cuenta bancaria, abono a cuentas por cobrar

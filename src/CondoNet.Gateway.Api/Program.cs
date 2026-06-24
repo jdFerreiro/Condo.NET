@@ -22,16 +22,26 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 
 // Configuración de RabbitMQ
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"));
-builder.Services.AddSingleton<IConnection>(sp =>
+
+// 2. Registro de la Factoría de Conexiones (Requerido por MassTransit 9 para gestionar reconexiones)
+builder.Services.AddSingleton<IConnectionFactory>(sp =>
 {
-    var rabbitSettings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<RabbitMqSettings>>().Value;
-    var factory = new ConnectionFactory()
+    var rabbitSettings = sp.GetRequiredService<IOptions<RabbitMqSettings>>().Value;
+    return new ConnectionFactory()
     {
-        Uri = new Uri(rabbitSettings.ConnectionString)
+        Uri = new Uri(rabbitSettings.ConnectionString),
+        AutomaticRecoveryEnabled = true // Habilita la recuperación automática de canales rotos
     };
-    return factory.CreateConnection();
 });
 
+// 3. Registro del IConnection unificado (Resuelve el error de compilación utilizando la firma asíncrona nativa)
+builder.Services.AddSingleton<IConnection>(sp =>
+{
+    var factory = sp.GetRequiredService<IConnectionFactory>();
+
+    // Resolvemos la tarea de forma segura en el arranque del contenedor de dependencias
+    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+});
 
 // Configuración de BlockChain
 builder.Services.Configure<BlockchainSettings>(builder.Configuration.GetSection("BlockChain"));

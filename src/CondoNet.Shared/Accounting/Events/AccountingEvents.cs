@@ -37,5 +37,14 @@
         string TransactionNumber,
         DateTime OccurredOn
     );
+
+    public record BusinessTransactionOccurred(
+        Guid CondominiumId,
+        int EventType,             // Mapeado a tu BusinessEventType (1 = Factura, 2 = Pago...)
+        decimal BaseAmount,        // Monto base de la operación financiera
+        string Description,        // Glosa descriptiva para el asiento
+        string DocumentReference   // Número de factura o comprobante bancario de origen
+    );
+
 }
 

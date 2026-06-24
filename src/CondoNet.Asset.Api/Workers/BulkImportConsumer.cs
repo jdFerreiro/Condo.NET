@@ -1,5 +1,4 @@
-﻿using CondoNet.Asset.Api.Mappings;
-using CondoNet.Asset.Core.Entities;
+﻿using CondoNet.Asset.Core.Entities;
 using CondoNet.Asset.Infrastructure.Persistence;
 using CondoNet.Shared.Asset.Events;
 using MassTransit;
@@ -58,22 +57,22 @@ public class BulkImportConsumer(
             }
 
             // 4. Crear Unidades
-            //var unitsToInsert = message.Units.Select(dto => new Unit
-            //{
-            //    Identifier = dto.Identifier,
-            //    Aliquot = dto.Aliquot,
-            //    Type = dto.Type,
-            //    OwnerEmail = dto.OwnerEmail,
-            //    TowerId = towers.First(t => t.Name == dto.TowerName).Id,
-            //    OrganizationId = message.OrganizationId // Asignación manual requerida en Background Worker
-            //}).ToList();
+            var unitsToInsert = message.Units.Select(dto => new Unit
+            {
+                Identifier = dto.Identifier,
+                Aliquot = dto.Aliquot,
+                Type = dto.Type,
+                OwnerEmail = dto.OwnerEmail,
+                TowerId = towers.First(t => t.Name == dto.TowerName).Id,
+                OrganizationId = message.OrganizationId // Asignación manual requerida en Background Worker
+            }).ToList();
 
-            var unitsToInsert = message.Units.Select(dto =>
-                dto.ToEntity(
-                    message.OrganizationId,
-                    towers.First(t => t.Name == dto.TowerName).Id
-                )
-            ).ToList();
+            //var unitsToInsert = message.Units.Select(dto =>
+            //    dto.ToEntity(
+            //        message.OrganizationId,
+            //        towers.First(t => t.Name == dto.TowerName).Id
+            //    )
+            //).ToList();
 
             await _context.Units.AddRangeAsync(unitsToInsert);
             await _context.SaveChangesAsync();

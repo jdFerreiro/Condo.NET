@@ -135,10 +135,10 @@ try
 
     app.UseMiddleware<ApiKeyMiddleware>();
 
-    app.MapAccountingEndpoints();
     app.MapAccountEndpoints();
-    app.MapAccountingTransactionEndpoints();
-    app.MapAccountingEntryEndpoints();
+    app.MapJournalEndpoints();
+    app.MapReportEndpoints();
+
 
     app.Run();
 }

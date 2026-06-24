@@ -19,13 +19,13 @@ public class AccountingDbContext : DbContext
         modelBuilder.Entity<AccountingTransaction>()
             .HasMany(t => t.Entries)
             .WithOne(e => e.Transaction)
-            .HasForeignKey(e => e.TransactionId)
+            .HasForeignKey(e => e.AccountingTransactionId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Relación: Account -> Entries
-        modelBuilder.Entity<Account>()
-            .HasMany(a => a.Entries)
-            .WithOne(e => e.Account)
+        modelBuilder.Entity<AccountingEntry>()
+            .HasOne(e => e.Account)
+            .WithMany()
             .HasForeignKey(e => e.AccountId)
             .OnDelete(DeleteBehavior.Restrict);
     }

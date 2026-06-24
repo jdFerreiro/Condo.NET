@@ -10,9 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CondoNet.Accounting.Infrastructure.Services
 {
-    public partial class AccountingService(DbContext context,
-        IPublishEndpoint publishEndpoint,
-        ITenantService tenantService,
+    public partial class AccountingService(DbContext context, IPublishEndpoint publishEndpoint, ITenantService tenantService,
         IHttpContextAccessor httpContextAccessor) : IAccountingService
     {
         // 1. CREAR CUENTA (Homologado con tu base)

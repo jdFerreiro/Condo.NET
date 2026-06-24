@@ -99,4 +99,23 @@
         decimal Balance
     );
 
+    public record ProcessAutomatedEntryRequest(
+        Guid CondominiumId,
+        int EventType,             // Mapeado de BusinessEventType
+        decimal BaseAmount,        // El monto principal de la operación (Monto Base)
+        string Description,        // Concepto del asiento
+        string DocumentReference   // Nro de factura, recibo o transferencia origen
+    );
+
+    public record AccountNodeDto(
+        Guid Id,
+        string Code,
+        string Name,
+        string Type,
+        bool IsTransactional,
+        decimal CurrentBalance,
+        bool IsActive,
+        List<AccountNodeDto> Children // Lista recursiva para almacenar los nodos hijos
+    );
 }
+

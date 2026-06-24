@@ -51,4 +51,16 @@
             NewAliquot = newAliquot;
         }
     }
+
+    // Evento de integración para una sola unidad creada
+    public record UnitCreated(
+        Guid Id,
+        Guid CondominiumId,
+        Guid OrganizationId,
+        string Identifier,
+        decimal Aliquot,
+        string OwnerEmail,
+        DateTime OccurredOn
+    );
+
 }

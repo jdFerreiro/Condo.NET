@@ -17,17 +17,13 @@ public class CondominiumService(
     ITenantService tenantService,
     IHttpContextAccessor httpContextAccessor) : ICondominiumService
 {
-    private readonly AssetDbContext _context = context;
-    private readonly IPublishEndpoint _publishEndpoint = publishEndpoint;
-    private readonly ITenantService _tenantService = tenantService;
-    private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
     // 1. CREATE: Alta de un Condominio (Conectado a la Organización del Administrador)
     public async Task<Result<Guid>> CreateCondominiumAsync(CreateCondominiumRequest request)
     {
-        var tenantOrgId = _tenantService.GetOrganizationId();
+        var tenantOrgId = tenantService.GetOrganizationId();
 
-        var isDuplicate = await _context.Condominiums.AnyAsync(c => c.TaxId.Trim() == request.TaxId.Trim());
+        var isDuplicate = await context.Condominiums.AnyAsync(c => c.TaxId.Trim() == request.TaxId.Trim());
         if (isDuplicate)
             return Result<Guid>.Failure("La identificación fiscal de este condominio ya se encuentra dada de alta.");
 
@@ -42,11 +38,11 @@ public class CondominiumService(
             Units = []
         };
 
-        _context.Condominiums.Add(newCondo);
-        await _context.SaveChangesAsync();
+        context.Condominiums.Add(newCondo);
+        await context.SaveChangesAsync();
 
         // Notificación de Consistencia Eventual para Auth, Finanzas y Contabilidad
-        await _publishEndpoint.Publish(new CondominiumCreatedEvent(
+        await publishEndpoint.Publish(new CondominiumCreatedEvent(
             newCondo.Id,
             newCondo.OrganizationId,
             newCondo.Name,
@@ -59,10 +55,10 @@ public class CondominiumService(
     // 2. READ (Individual): Obtener detalle de un condominio validando aislamiento Multi-Tenant
     public async Task<Result<GetCondominiumResponse>> GetCondominiumByIdAsync(Guid condoId)
     {
-        var tenantOrgId = _tenantService.GetOrganizationId();
+        var tenantOrgId = tenantService.GetOrganizationId();
 
         // El filtro por OrganizationId asegura que una administradora no lea condominios ajenos
-        var condo = await _context.Condominiums
+        var condo = await context.Condominiums
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == condoId && c.OrganizationId == tenantOrgId);
 
@@ -76,9 +72,9 @@ public class CondominiumService(
     // 3. READ (Masivo): Listar todos los condominios que administra la organización activa
     public async Task<Result<List<GetCondominiumResponse>>> GetCondominiumsByOrganizationAsync()
     {
-        var tenantOrgId = _tenantService.GetOrganizationId();
+        var tenantOrgId = tenantService.GetOrganizationId();
 
-        var condos = await _context.Condominiums
+        var condos = await context.Condominiums
             .AsNoTracking()
             .Where(c => c.OrganizationId == tenantOrgId)
             .Select(c => new GetCondominiumResponse
@@ -96,9 +92,9 @@ public class CondominiumService(
     // 4. UPDATE: Actualizar datos de infraestructura o porcentaje de fondo de reserva
     public async Task<Result<bool>> UpdateCondominiumAsync(Guid condoId, UpdateCondominiumRequest request)
     {
-        var tenantOrgId = _tenantService.GetOrganizationId();
+        var tenantOrgId = tenantService.GetOrganizationId();
 
-        var condo = await _context.Condominiums
+        var condo = await context.Condominiums
             .FirstOrDefaultAsync(c => c.Id == condoId && c.OrganizationId == tenantOrgId);
 
         if (condo == null)
@@ -108,12 +104,12 @@ public class CondominiumService(
         condo.Address = request.Address.Trim();
         condo.ReserveFundPercentage = request.ReserveFundPercentage;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         // REGLA DE NEGOCIO CRÍTICA: Notificar el cambio a Finanzas/Contabilidad.
         // Si el 'ReserveFundPercentage' muta, los algoritmos de cálculo de facturas y cuotas extras 
         // de 'Financial Service' deben recalcular sus variables de inmediato para este condominio.
-        await _publishEndpoint.Publish(new CondominiumUpdatedEvent(
+        await publishEndpoint.Publish(new CondominiumUpdatedEvent(
             condo.Id,
             condo.OrganizationId,
             condo.Name,
@@ -126,9 +122,9 @@ public class CondominiumService(
     // 5. DELETE (Lógico): Eliminar/Bajar un condominio de la administración activa
     public async Task<Result<bool>> DeleteCondominiumAsync(Guid condoId)
     {
-        var tenantOrgId = _tenantService.GetOrganizationId();
+        var tenantOrgId = tenantService.GetOrganizationId();
 
-        var condo = await _context.Condominiums
+        var condo = await context.Condominiums
             .Include(c => c.Units) // Evaluamos si tiene unidades amarradas
             .FirstOrDefaultAsync(c => c.Id == condoId && c.OrganizationId == tenantOrgId);
 
@@ -139,11 +135,11 @@ public class CondominiumService(
         if (condo.Units.Count > 0)
             return Result<bool>.Failure("No es posible dar de baja un condominio que aún contiene unidades registradas. Realice una migración de activos primero.");
 
-        _context.Condominiums.Remove(condo);
-        await _context.SaveChangesAsync();
+        context.Condominiums.Remove(condo);
+        await context.SaveChangesAsync();
 
         // Notificación de remoción para que Auth.API purgue los contextos de usuarios obsoletos de este edificio
-        await _publishEndpoint.Publish(new CondominiumDeletedEvent(condo.Id, tenantOrgId), ctx => StampCorrelationId(ctx));
+        await publishEndpoint.Publish(new CondominiumDeletedEvent(condo.Id, tenantOrgId), ctx => StampCorrelationId(ctx));
 
         return Result<bool>.Success(true);
     }
@@ -153,7 +149,7 @@ public class CondominiumService(
     /// </summary>
     private void StampCorrelationId(PublishContext context)
     {
-        var httpContext = _httpContextAccessor.HttpContext;
+        var httpContext = httpContextAccessor.HttpContext;
         if (httpContext != null && httpContext.Request.Headers.TryGetValue("X-Correlation-ID", out var correlationId))
         {
             context.CorrelationId = Guid.TryParse(correlationId.ToString(), out var parsedId) ? parsedId : Guid.NewGuid();

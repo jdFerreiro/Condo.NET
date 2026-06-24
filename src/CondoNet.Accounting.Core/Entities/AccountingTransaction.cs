@@ -11,6 +11,7 @@ namespace CondoNet.Accounting.Core.Entities
         public DateTime Date { get; set; }
         public TransactionStatus Status { get; set; } = TransactionStatus.Posted;
         public string CreatedBy { get; set; } = null!;
+        public DateTime CreatedAt { get; set; }
 
         // Un comprobante tiene N renglones o apuntes (Mínimo 2 para cumplir Partida Doble)
         public List<AccountingEntry> Entries { get; set; } = [];

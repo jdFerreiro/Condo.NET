@@ -13,7 +13,7 @@ public class AccountingEntryRepository : IAccountingEntryRepository
     }
     public async Task<AccountingEntry?> GetByIdAsync(Guid id) => await _context.Entries.FindAsync(id);
     public async Task<IEnumerable<AccountingEntry>> GetAllByTransactionAsync(Guid transactionId) =>
-        await _context.Entries.Where(e => e.TransactionId == transactionId).ToListAsync();
+        await _context.Entries.Where(e => e.AccountingTransactionId == transactionId).ToListAsync();
     public async Task AddAsync(AccountingEntry entry) => await _context.Entries.AddAsync(entry);
     public async Task UpdateAsync(AccountingEntry entry) => _context.Entries.Update(entry);
     public async Task DeleteAsync(Guid id)
