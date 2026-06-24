@@ -1,9 +1,8 @@
 using CondoNet.Accounting.Api.Endpoints;
 using CondoNet.Accounting.Core.Interfaces.Repositories;
-using CondoNet.Accounting.Core.Interfaces.Services;
+using CondoNet.Accounting.Infrastructure;
 using CondoNet.Accounting.Infrastructure.Persistence;
 using CondoNet.Accounting.Infrastructure.Repositories;
-using CondoNet.Accounting.Infrastructure.Services;
 using CondoNet.Shared.Handlers;
 using CondoNet.Shared.Interfaces;
 using CondoNet.Shared.Middleware;
@@ -51,17 +50,37 @@ try
     var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>() ?? throw new InvalidOperationException("JwtSettings no configurado.");
     var rabbitMqSettings = builder.Configuration.GetSection("RabbitMQ").Get<RabbitMqSettings>() ?? throw new InvalidOperationException("RabbitMQ no configurado.");
 
+    // =========================================================================
+    // PERSISTENCIA Y CONTEXTOS DE BASE DE DATOS
+    // =========================================================================
     builder.Services.AddDbContext<AccountingDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("CondoNet.Accounting.Infrastructure")));
+        options.UseSqlServer(
+            builder.Configuration.GetConnectionString("DefaultConnection"),
+            b => b.MigrationsAssembly("CondoNet.Accounting.Infrastructure")));
+
+    // Mapeo Crítico: Resuelve el requerimiento de DbContext de tus constructores primarios
+    builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<AccountingDbContext>());
+
+    // =========================================================================
+    // MENSAJERÍA Y INFRAESTRUCTURA (MassTransit, RabbitMQ, Cuentas, Seeder)
+    // =========================================================================
+    builder.Services.AddInfrastructureServices(builder.Configuration);
 
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddTransient<InternalHttpGatewayHandler>();
 
+    // =========================================================================
+    // REPOSITORIOS Y SERVICIOS AUXILIARES
+    // =========================================================================
     builder.Services.AddScoped<IAccountingEntryRepository, AccountingEntryRepository>();
     builder.Services.AddScoped<IAccountingTransactionRepository, AccountingTransactionRepository>();
     builder.Services.AddScoped<IAccountRepository, AccountRepository>();
     builder.Services.AddScoped<ITenantService, TenantService>();
-    builder.Services.AddScoped<IAccountingAutomatonService, AccountingAutomatonService>();
+
+    // NOTA: Si 'AccountingAutomatonService' es una clase vieja o duplicada que creamos
+    // antes de unificar el autómata dentro de la clase parcial 'AccountingService', 
+    // debes comentar o eliminar su registro aquí para evitar colisiones en la validación:
+    // builder.Services.AddScoped<IAccountingAutomatonService, AccountingAutomatonService>();
 
     builder.Services.AddOpenApi();
     builder.Services.AddEndpointsApiExplorer();
@@ -100,6 +119,7 @@ try
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator });
 
     builder.Services.AddHealthChecks().AddSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "SQL Server");
+
     var app = builder.Build();
 
     app.UseSwagger();
@@ -138,7 +158,7 @@ try
     app.MapAccountEndpoints();
     app.MapJournalEndpoints();
     app.MapReportEndpoints();
-
+    app.MapTemplateEndpoints();
 
     app.Run();
 }

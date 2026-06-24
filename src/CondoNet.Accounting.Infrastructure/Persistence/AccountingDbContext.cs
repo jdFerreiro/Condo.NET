@@ -1,32 +1,22 @@
 using CondoNet.Accounting.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace CondoNet.Accounting.Infrastructure.Persistence;
-
-public class AccountingDbContext : DbContext
+namespace CondoNet.Accounting.Infrastructure.Persistence
 {
-    public AccountingDbContext(DbContextOptions<AccountingDbContext> options) : base(options) { }
-
-    public DbSet<Account> Accounts { get; set; }
-    public DbSet<AccountingTransaction> Transactions { get; set; }
-    public DbSet<AccountingEntry> Entries { get; set; }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    public class AccountingDbContext(DbContextOptions<AccountingDbContext> options) : DbContext(options)
     {
-        base.OnModelCreating(modelBuilder);
 
-        // Relación: Transaction -> Entries
-        modelBuilder.Entity<AccountingTransaction>()
-            .HasMany(t => t.Entries)
-            .WithOne(e => e.Transaction)
-            .HasForeignKey(e => e.AccountingTransactionId)
-            .OnDelete(DeleteBehavior.Cascade);
+        // DbSets Completos del Microservicio Contable Avanzado
+        public DbSet<Account> Accounts { get; set; } = null!;
+        public DbSet<AccountingTransaction> Transactions { get; set; } = null!;
+        public DbSet<AccountingEntry> Entries { get; set; } = null!; // <- LA ENTIDAD QUE FALTABA
+        public DbSet<AccountingTemplate> Templates { get; set; } = null!;
+        public DbSet<TemplateRule> TemplateRules { get; set; } = null!;
 
-        // Relación: Account -> Entries
-        modelBuilder.Entity<AccountingEntry>()
-            .HasOne(e => e.Account)
-            .WithMany()
-            .HasForeignKey(e => e.AccountId)
-            .OnDelete(DeleteBehavior.Restrict);
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AccountingDbContext).Assembly);
+        }
     }
 }

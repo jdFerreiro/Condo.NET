@@ -1,4 +1,5 @@
-﻿using CondoNet.Accounting.Core.Interfaces.Services;
+﻿using CondoNet.Accounting.Core.Interfaces;
+using CondoNet.Accounting.Core.Interfaces.Services;
 using CondoNet.Accounting.Infrastructure.Consumers;
 using CondoNet.Accounting.Infrastructure.Services;
 using MassTransit;
@@ -17,6 +18,9 @@ namespace CondoNet.Accounting.Infrastructure
 
             // 2. REGISTRO DEL MOTOR DE SIEMBRA CONTABLE AUTOMÁTICA
             services.AddScoped<IAccountingSeeder, AccountingSeeder>();
+
+            // Registro del servicio de mantenimiento de plantillas del autómata
+            services.AddScoped<IAccountingTemplateService, AccountingTemplateService>();
 
             // 3. Configuración homogénea de MassTransit para CondoNet
             services.AddMassTransit(x =>

@@ -1,49 +1,63 @@
 using CondoNet.Accounting.Core.Entities;
 using CondoNet.Accounting.Core.Interfaces.Services;
+using CondoNet.Shared.Accounting.DTOs;
 using CondoNet.Shared.Events.Payments;
 using MassTransit;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
-namespace CondoNet.Accounting.Infrastructure.Consumers;
-
-public class InvoiceRegisteredEventConsumer : IConsumer<InvoiceRegisteredEvent>
+namespace CondoNet.Accounting.Infrastructure.Consumers
 {
-    private readonly IAccountingAutomatonService _automatonService;
-
-    public InvoiceRegisteredEventConsumer(IAccountingAutomatonService automatonService)
+    public class InvoiceRegisteredEventConsumer(
+        IAccountingService accountingService,
+        DbContext dbContext, // Inyectamos el DbContext de forma homogénea para resolver el condominio
+        ILogger<InvoiceRegisteredEventConsumer> logger) : IConsumer<InvoiceRegisteredEvent>
     {
-        _automatonService = automatonService;
-    }
-
-    public async Task Consume(ConsumeContext<InvoiceRegisteredEvent> context)
-    {
-        var evt = context.Message;
-        // Mapea el evento a una transacción contable de registro de obligación
-        var transaction = new AccountingTransaction
+        public async Task Consume(ConsumeContext<InvoiceRegisteredEvent> context)
         {
-            Id = Guid.NewGuid(),
-            Date = evt.RegisteredAt,
-            Description = $"Registro de factura {evt.InvoiceId} - {evt.Description}",
-            Number = evt.Reference,
-            Entries = new List<AccountingEntry>()
+            var message = context.Message;
+
+            if (logger.IsEnabled(LogLevel.Information))
             {
-                // Debe: Gasto (ejemplo, ajustar AccountId real)
-                new AccountingEntry {
-                    Id = Guid.NewGuid(),
-                    AccountId = Guid.Empty, // Reemplazar por el ID real de la cuenta de gasto
-                    Debit = evt.Amount,
-                    Credit = 0,
-                    Description = "Gasto por factura registrada"
-                },
-                // Haber: Cuentas por pagar (ajustar AccountId real)
-                new AccountingEntry {
-                    Id = Guid.NewGuid(),
-                    AccountId = Guid.Empty, // Reemplazar por el ID real de la cuenta por pagar
-                    Debit = 0,
-                    Credit = evt.Amount,
-                    Description = "Cuentas por pagar a proveedores"
-                }
+                logger.LogInformation("Procesando emisión automática de cuenta por cobrar para factura: {InvoiceId}", message.InvoiceId);
             }
-        };
-        await _automatonService.ProcessTransactionAsync(transaction, Guid.Empty);
+
+            // 1. RESOLVER EL CONDOMINIUM ID DESDE EL MAESTRO DE CUENTAS DEL INQUILINO:
+            // Buscamos una cuenta contable activa de agrupación o transaccional de cobranza 
+            // que sirva como ancla para recuperar de forma segura el CondominiumId del inquilino actual.
+            var accountAnchor = await dbContext.Set<Account>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.Code.StartsWith("1.1.02") && a.IsActive); // Código base de Cuentas por Cobrar
+
+            Guid condominiumId;
+
+            if (accountAnchor != null)
+            {
+                condominiumId = accountAnchor.CondominiumId;
+            }
+            else
+            {
+                // Si el catálogo está vacío o no se ha inicializado el condominio, abortamos con reintento
+                logger.LogError("Fallo en Onboarding: No se encontró un Condominio inicializado con plan de cuentas para procesar la Factura {InvoiceId}", message.InvoiceId);
+                throw new ProcessQueueException($"No se pudo resolver el Condominio para la factura {message.InvoiceId}. Verifique el sembrado.");
+            }
+
+            // 2. MAPEAR AL DTO UNIFICADO AJUSTANDO A TUS PROPIEDADES REALES
+            var automatedRequest = new ProcessAutomatedEntryRequest(
+                CondominiumId: condominiumId, // ID del condominio resuelto dinámicamente
+                EventType: 1, // 1 = MonthlyBillingGenerated
+                BaseAmount: message.Amount, // <-- Reemplaza por tu propiedad real (ej: message.Amount o message.Total)
+                Description: $"Emisión Mensual de Gastos de Condominio",
+                DocumentReference: message.InvoiceId.ToString() // <-- Reemplaza por tu propiedad real de número o ID
+            );
+
+            // 3. ENVIAR AL AUTÓMATA CONTABLE CORE
+            var result = await accountingService.ProcessAutomatedEntryAsync(automatedRequest);
+
+            if (!result.IsSuccess)
+            {
+                throw new ProcessQueueException($"Fallo en el autómata al registrar emisión: {result.Error}");
+            }
+        }
     }
 }

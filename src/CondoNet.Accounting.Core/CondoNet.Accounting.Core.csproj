@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Interfaces\Services\IAccountingAutomatonService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CondoNet.Shared\CondoNet.Shared.csproj" />
   </ItemGroup>
 
