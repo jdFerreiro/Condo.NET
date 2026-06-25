@@ -42,10 +42,10 @@ public class TokenService(IOptions<JwtSettings> settings) : ITokenService
             foreach (var rp in role.RolePermissions)
             {
                 claims.Add(new Claim("permissions", rp.Permission.Name));
-                permissionsList.Add(new Permissions(rp.Permission.Id, rp.Permission.Name));
+                permissionsList.Add(new Permissions(rp.Permission.Id, rp.Permission.Name, rp.Permission.Path, rp.Permission.Icon, rp.Permission.Description, rp.Permission.DisplayOrder));
             }
         }
-
+        0
         // Eliminar duplicados de permisos si el usuario comparte accesos cruzados
         permissionsList = [.. permissionsList.DistinctBy(p => p.Id)];
 

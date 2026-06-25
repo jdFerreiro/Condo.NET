@@ -47,18 +47,27 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : DbContext(
 
         modelBuilder.Entity<Permission>(entity =>
         {
+            // 1. Nombre de tabla y llave primaria
             entity.ToTable("permissions");
             entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Description).IsRequired().HasMaxLength(1500);
             entity.Property(e => e.Path).IsRequired().HasMaxLength(500);
-            entity.Property(e => e.Image).IsRequired();
+            entity.Property(e => e.Icon).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.DisplayOrder).IsRequired();
 
+            // 3. Configuración de la Relación Jerárquica Recursiva (Árbol multinivel de Menús)
+            entity.HasOne(e => e.ParentPermission)
+                .WithMany(p => p.ChildPermissions)
+                .HasForeignKey(e => e.ParentPermissionId)
+                .OnDelete(DeleteBehavior.Restrict); // Evita borrar un menú padre si todavía tiene submenús asociados
+
+            // 4. Relación Muchos a Muchos (M:N) con Roles a través de la tabla intermedia
             entity.HasMany(rp => rp.RolePermissions)
                 .WithOne(r => r.Permission)
                 .HasForeignKey(rp => rp.PermissionId)
-                .OnDelete(DeleteBehavior.Cascade);
-
+                .OnDelete(DeleteBehavior.Cascade); // Si se elimina el permiso, se limpian sus asignaciones en los roles
         });
 
         modelBuilder.Entity<RefreshToken>(entity =>

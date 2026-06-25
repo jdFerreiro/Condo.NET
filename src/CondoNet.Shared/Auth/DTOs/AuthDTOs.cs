@@ -19,8 +19,23 @@
 
     public record Permissions(
         int Id,
-        string PermissionName
+        string Name,
+        string Path,
+        string Description,
+        string Icon,
+        int DisplayOrder
     );
 
     public record LogoutRequest(string RefreshToken);
+
+    // El DTO de respuesta estructurado que el Frontend leerá recursivamente para armar el Sidebar HTML
+    public record MenuItemDto(
+        int Id,
+        string Name,
+        string Path,
+        string Icon,
+        int DisplayOrder,
+        List<MenuItemDto> Children
+    );
+
 }

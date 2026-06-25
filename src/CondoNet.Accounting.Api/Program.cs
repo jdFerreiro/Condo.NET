@@ -164,7 +164,16 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Accounting service falló en el arranque.");
+    // 💡 FILTRADO DE SEGURIDAD PARA HERRAMIENTAS DE EF CORE / MIGRACIONES
+    // Si la excepción fue causada por la detención intencional del Host de diseño, la ignoramos.
+    if (ex.GetType().Name == "HostAbortedException")
+    {
+        Log.Information("El host se detuvo de forma controlada (Inspección de diseño de EF Core / Migraciones).");
+    }
+    else
+    {
+        Log.Fatal(ex, "Accounting service falló en el arranque real en producción.");
+    }
 }
 finally
 {

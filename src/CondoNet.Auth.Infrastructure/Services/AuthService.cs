@@ -66,8 +66,16 @@ public class AuthService(AuthDbContext db, IIdentityService identityService, IPu
         // 6. Aplanar los permisos a nivel de aplicación para autorizaciones rápidas
         var userPermissions = activeContexts
             .SelectMany(c => c.Roles.SelectMany(p => p.RolePermissions))
-            .Select(rp => new Permissions(rp.Permission.Id, rp.Permission.Name))
-            .Distinct()
+            .Select(rp => rp.Permission) // Proyectamos la entidad Permission directamente
+            .DistinctBy(p => p.Id)       // Evitamos duplicados en memoria usando el Id de forma eficiente
+            .Select(p => new Permissions(
+                Id: p.Id,
+                Name: p.Name,
+                Description: p.Description,
+                DisplayOrder: p.DisplayOrder,
+                Path: p.Path,
+                Icon: p.Icon // Mapeo directo al nuevo campo optimizado de iconos de la UI
+            ))
             .ToList();
 
         // 7. Mapear los entornos multi-tenant disponibles para que el cliente pueda conmutar
