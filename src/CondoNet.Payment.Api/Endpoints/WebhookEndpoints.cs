@@ -1,5 +1,4 @@
 using CondoNet.Shared.Payment.DTOs;
-using Microsoft.AspNetCore.Http;
 
 namespace CondoNet.Payment.Api.Endpoints;
 

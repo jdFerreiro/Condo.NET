@@ -1,7 +1,7 @@
-using System.Security.Cryptography;
-using System.Text;
 using CondoNet.Financial.Core.Services;
 using CondoNet.Shared.Financial.DTOs;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace CondoNet.Financial.Infrastructure.Services;
 

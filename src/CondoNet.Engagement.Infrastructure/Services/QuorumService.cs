@@ -1,9 +1,6 @@
 using CondoNet.Engagement.Core.Entities;
 using CondoNet.Engagement.Core.Repositories;
 using CondoNet.Engagement.Core.Services;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace CondoNet.Engagement.Infrastructure.Services
 {

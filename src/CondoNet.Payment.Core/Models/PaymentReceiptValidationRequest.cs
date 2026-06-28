@@ -1,5 +1,3 @@
-using System;
-
 namespace CondoNet.Payment.Core.Models;
 
 public class PaymentReceiptValidationRequest

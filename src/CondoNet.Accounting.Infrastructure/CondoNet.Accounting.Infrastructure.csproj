@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CondoNet.Accounting.Core\CondoNet.Accounting.Core.csproj" />
+    <ProjectReference Include="..\CondoNet.Booking.Core\CondoNet.Booking.Core.csproj" />
   </ItemGroup>
 
 </Project>

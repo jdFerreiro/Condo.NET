@@ -2,8 +2,6 @@ using CondoNet.BlockChain.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nethereum.Web3;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace CondoNet.BlockChain.Infrastructure;
 

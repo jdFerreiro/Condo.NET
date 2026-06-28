@@ -1,14 +1,6 @@
-using System;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Numerics;
-using Nethereum.Hex.HexTypes;
 using Nethereum.ABI.FunctionEncoding.Attributes;
-using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Contracts.CQS;
 using Nethereum.Contracts;
-using System.Threading;
-using CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition;
+using System.Numerics;
 
 namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
 {
@@ -195,7 +187,7 @@ namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
     public partial class AdminOutputDTO : AdminOutputDTOBase { }
 
     [FunctionOutput]
-    public class AdminOutputDTOBase : IFunctionOutputDTO 
+    public class AdminOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("address", "", 1)]
         public virtual string ReturnValue1 { get; set; }
@@ -210,7 +202,7 @@ namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
     public partial class ConfiguracionesOutputDTO : ConfiguracionesOutputDTOBase { }
 
     [FunctionOutput]
-    public class ConfiguracionesOutputDTOBase : IFunctionOutputDTO 
+    public class ConfiguracionesOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("string", "", 1)]
         public virtual string ReturnValue1 { get; set; }
@@ -219,7 +211,7 @@ namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
     public partial class GastosOutputDTO : GastosOutputDTOBase { }
 
     [FunctionOutput]
-    public class GastosOutputDTOBase : IFunctionOutputDTO 
+    public class GastosOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("string", "descripcion", 1)]
         public virtual string Descripcion { get; set; }
@@ -234,7 +226,7 @@ namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
     public partial class GetConfiguracionOutputDTO : GetConfiguracionOutputDTOBase { }
 
     [FunctionOutput]
-    public class GetConfiguracionOutputDTOBase : IFunctionOutputDTO 
+    public class GetConfiguracionOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("string", "", 1)]
         public virtual string ReturnValue1 { get; set; }
@@ -243,7 +235,7 @@ namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
     public partial class GetMerkleRootOutputDTO : GetMerkleRootOutputDTOBase { }
 
     [FunctionOutput]
-    public class GetMerkleRootOutputDTOBase : IFunctionOutputDTO 
+    public class GetMerkleRootOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("string", "", 1)]
         public virtual string ReturnValue1 { get; set; }
@@ -252,7 +244,7 @@ namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
     public partial class MerkleRootsOutputDTO : MerkleRootsOutputDTOBase { }
 
     [FunctionOutput]
-    public class MerkleRootsOutputDTOBase : IFunctionOutputDTO 
+    public class MerkleRootsOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("string", "", 1)]
         public virtual string ReturnValue1 { get; set; }
@@ -263,7 +255,7 @@ namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
     public partial class PagosOutputDTO : PagosOutputDTOBase { }
 
     [FunctionOutput]
-    public class PagosOutputDTOBase : IFunctionOutputDTO 
+    public class PagosOutputDTOBase : IFunctionOutputDTO
     {
         [Parameter("string", "referencia", 1)]
         public virtual string Referencia { get; set; }
@@ -286,11 +278,11 @@ namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
     [Event("ConfiguracionActualizada")]
     public class ConfiguracionActualizadaEventDTOBase : IEventDTO
     {
-        [Parameter("string", "campo", 1, false )]
+        [Parameter("string", "campo", 1, false)]
         public virtual string Campo { get; set; }
-        [Parameter("string", "valor", 2, false )]
+        [Parameter("string", "valor", 2, false)]
         public virtual string Valor { get; set; }
-        [Parameter("address", "sender", 3, true )]
+        [Parameter("address", "sender", 3, true)]
         public virtual string Sender { get; set; }
     }
 
@@ -299,15 +291,15 @@ namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
     [Event("GastoModificado")]
     public class GastoModificadoEventDTOBase : IEventDTO
     {
-        [Parameter("string", "expenseId", 1, false )]
+        [Parameter("string", "expenseId", 1, false)]
         public virtual string ExpenseId { get; set; }
-        [Parameter("string", "descripcion", 2, false )]
+        [Parameter("string", "descripcion", 2, false)]
         public virtual string Descripcion { get; set; }
-        [Parameter("uint256", "monto", 3, false )]
+        [Parameter("uint256", "monto", 3, false)]
         public virtual BigInteger Monto { get; set; }
-        [Parameter("uint256", "fecha", 4, false )]
+        [Parameter("uint256", "fecha", 4, false)]
         public virtual BigInteger Fecha { get; set; }
-        [Parameter("address", "sender", 5, true )]
+        [Parameter("address", "sender", 5, true)]
         public virtual string Sender { get; set; }
     }
 
@@ -316,13 +308,13 @@ namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
     [Event("MerkleRootAnclado")]
     public class MerkleRootAncladoEventDTOBase : IEventDTO
     {
-        [Parameter("string", "merkleRoot", 1, false )]
+        [Parameter("string", "merkleRoot", 1, false)]
         public virtual string MerkleRoot { get; set; }
-        [Parameter("uint256", "year", 2, false )]
+        [Parameter("uint256", "year", 2, false)]
         public virtual BigInteger Year { get; set; }
-        [Parameter("uint256", "month", 3, false )]
+        [Parameter("uint256", "month", 3, false)]
         public virtual BigInteger Month { get; set; }
-        [Parameter("address", "sender", 4, true )]
+        [Parameter("address", "sender", 4, true)]
         public virtual string Sender { get; set; }
     }
 
@@ -331,13 +323,13 @@ namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
     [Event("PagoRegistrado")]
     public class PagoRegistradoEventDTOBase : IEventDTO
     {
-        [Parameter("string", "unitId", 1, false )]
+        [Parameter("string", "unitId", 1, false)]
         public virtual string UnitId { get; set; }
-        [Parameter("uint256", "monto", 2, false )]
+        [Parameter("uint256", "monto", 2, false)]
         public virtual BigInteger Monto { get; set; }
-        [Parameter("string", "referencia", 3, false )]
+        [Parameter("string", "referencia", 3, false)]
         public virtual string Referencia { get; set; }
-        [Parameter("address", "sender", 4, true )]
+        [Parameter("address", "sender", 4, true)]
         public virtual string Sender { get; set; }
     }
 
@@ -346,13 +338,13 @@ namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
     [Event("PagoRevertido")]
     public class PagoRevertidoEventDTOBase : IEventDTO
     {
-        [Parameter("string", "unitId", 1, false )]
+        [Parameter("string", "unitId", 1, false)]
         public virtual string UnitId { get; set; }
-        [Parameter("uint256", "monto", 2, false )]
+        [Parameter("uint256", "monto", 2, false)]
         public virtual BigInteger Monto { get; set; }
-        [Parameter("string", "referencia", 3, false )]
+        [Parameter("string", "referencia", 3, false)]
         public virtual string Referencia { get; set; }
-        [Parameter("address", "sender", 4, true )]
+        [Parameter("address", "sender", 4, true)]
         public virtual string Sender { get; set; }
     }
 
@@ -361,13 +353,13 @@ namespace CondoNet.Financial.Infrastructure.CondoNet.ContractDefinition
     [Event("SplitRegistrado")]
     public class SplitRegistradoEventDTOBase : IEventDTO
     {
-        [Parameter("string", "unitId", 1, false )]
+        [Parameter("string", "unitId", 1, false)]
         public virtual string UnitId { get; set; }
-        [Parameter("uint256", "montoOperativo", 2, false )]
+        [Parameter("uint256", "montoOperativo", 2, false)]
         public virtual BigInteger MontoOperativo { get; set; }
-        [Parameter("uint256", "montoReserva", 3, false )]
+        [Parameter("uint256", "montoReserva", 3, false)]
         public virtual BigInteger MontoReserva { get; set; }
-        [Parameter("address", "sender", 4, true )]
+        [Parameter("address", "sender", 4, true)]
         public virtual string Sender { get; set; }
     }
 }

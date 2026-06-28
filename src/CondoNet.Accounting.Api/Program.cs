@@ -77,11 +77,6 @@ try
     builder.Services.AddScoped<IAccountRepository, AccountRepository>();
     builder.Services.AddScoped<ITenantService, TenantService>();
 
-    // NOTA: Si 'AccountingAutomatonService' es una clase vieja o duplicada que creamos
-    // antes de unificar el autómata dentro de la clase parcial 'AccountingService', 
-    // debes comentar o eliminar su registro aquí para evitar colisiones en la validación:
-    // builder.Services.AddScoped<IAccountingAutomatonService, AccountingAutomatonService>();
-
     builder.Services.AddOpenApi();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(s =>

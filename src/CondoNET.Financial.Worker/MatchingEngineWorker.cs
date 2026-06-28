@@ -1,6 +1,3 @@
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-
 namespace CondoNET.Financial.Worker
 {
     public class MatchingEngineWorker(IMatchingEngine matchingEngine, ILogger<MatchingEngineWorker> logger) : BackgroundService

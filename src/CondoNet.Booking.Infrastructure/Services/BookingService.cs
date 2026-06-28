@@ -1,8 +1,10 @@
 using CondoNet.Booking.Core.DTOs;
-using CondoNet.Booking.Core.Entities;
 using CondoNet.Booking.Core.Events;
+using CondoNet.Booking.Core.Extensions;
 using CondoNet.Booking.Core.Repositories;
 using CondoNet.Booking.Core.Services;
+using CondoNet.Shared.Booking.Enums;
+using CondoNet.Shared.Interfaces;
 using SharedBookingEvents = CondoNet.Shared.Events.Booking;
 
 namespace CondoNet.Booking.Infrastructure.Services
@@ -10,11 +12,13 @@ namespace CondoNet.Booking.Infrastructure.Services
     public class BookingService(
         IBookingAvailabilityService availabilityService,
         IBookingRepository bookingRepository,
-        IEventPublisher eventPublisher) : IBookingService
+        ITenantService tenantService,
+        IEventBus eventPublisher) : IBookingService
     {
         private readonly IBookingAvailabilityService _availabilityService = availabilityService;
-        private readonly IBookingRepository _bookingRepository = bookingRepository;
-        private readonly IEventPublisher _eventPublisher = eventPublisher;
+        private readonly IBookingRepository bookingRepository = bookingRepository;
+        private readonly ITenantService tenantService = tenantService;
+        private readonly IEventBus _eventPublisher = eventPublisher;
 
         public async Task<bool> ReserveAsync(Core.Entities.Booking booking)
         {
@@ -24,11 +28,12 @@ namespace CondoNet.Booking.Infrastructure.Services
             try
             {
                 // Validar que no exista una reserva que se cruce en el tiempo
-                if (await _bookingRepository.ExistsAsync(booking.AssetId, booking.Start, booking.End))
+                var condoId = tenantService.GetCondominiumId();
+                if (await bookingRepository.ExistsAsync(booking.Id, condoId))
                     return false;
                 booking.IsConfirmed = false; // Solo se confirma tras el pago
                 booking.CreatedAt = DateTime.UtcNow;
-                await _bookingRepository.AddAsync(booking);
+                await bookingRepository.AddAsync(booking);
 
                 // Publicar evento BookingCreated
                 var evt = new SharedBookingEvents.BookingCreatedEvent
@@ -100,14 +105,15 @@ namespace CondoNet.Booking.Infrastructure.Services
 
         public async Task<bool> ConfirmBookingAsync(Guid bookingId)
         {
-            var booking = await _bookingRepository.GetByIdAsync(bookingId);
+            var condoId = tenantService.GetCondominiumId();
+            var booking = await bookingRepository.GetByIdAsync(bookingId, condoId);
             if (booking == null)
                 return false;
             if (booking.IsConfirmed)
                 return true;
             booking.IsConfirmed = true;
             booking.UpdatedAt = DateTime.UtcNow;
-            await _bookingRepository.UpdateAsync(booking);
+            await bookingRepository.UpdateAsync(booking);
             var evt = new SharedBookingEvents.BookingConfirmedEvent
             {
                 BookingId = booking.Id,
@@ -124,21 +130,24 @@ namespace CondoNet.Booking.Infrastructure.Services
 
         public async Task<Core.Entities.Booking?> GetByIdAsync(Guid bookingId)
         {
-            return await _bookingRepository.GetByIdAsync(bookingId);
+            var condoId = tenantService.GetCondominiumId();
+            return await bookingRepository.GetByIdAsync(bookingId, condoId);
         }
 
         public async Task<IEnumerable<Core.Entities.Booking>> GetByAssetAndPeriodAsync(Guid assetId, DateTime start, DateTime end)
         {
-            return await _bookingRepository.GetByAssetAndPeriodAsync(assetId, start, end);
+            var condoId = tenantService.GetCondominiumId();
+            return await bookingRepository.GetByAssetAndPeriodAsync(condoId, assetId, start, end);
         }
 
         public async Task<bool> CancelAsync(Guid bookingId)
         {
-            var booking = await _bookingRepository.GetByIdAsync(bookingId);
+            var condoId = tenantService.GetCondominiumId();
+            var booking = await bookingRepository.GetByIdAsync(bookingId, condoId);
             if (booking == null)
                 return false;
             // Aquí podrías marcar como cancelada en vez de eliminar
-            // await _bookingRepository.RemoveAsync(booking);
+            // await bookingRepository.RemoveAsync(booking);
             return true;
         }
 
@@ -146,7 +155,8 @@ namespace CondoNet.Booking.Infrastructure.Services
         {
             var firstDay = new DateTime(year, month, 1);
             var lastDay = firstDay.AddMonths(1).AddDays(-1);
-            var bookings = (await _bookingRepository.GetByAssetAndPeriodAsync(assetId, firstDay, lastDay)).ToList();
+            var condoId = tenantService.GetCondominiumId();
+            var bookings = (await bookingRepository.GetByAssetAndPeriodAsync(condoId, assetId, firstDay, lastDay)).ToList();
             var confirmed = bookings.Where(b => b.IsConfirmed).ToList();
             var pending = bookings.Where(b => !b.IsConfirmed).ToList();
             var reservedDays = new HashSet<int>();
@@ -169,6 +179,28 @@ namespace CondoNet.Booking.Infrastructure.Services
                 Confirmed = confirmed,
                 Pending = pending
             };
+        }
+        // Fragmento lógico del Service que unifica todo:
+        public async Task<bool> ProcessNewBookingAsync(Core.Entities.Booking newBooking)
+        {
+            // 1. Generar la proyección matemática de fechas
+            var projectedOccurrences = newBooking.GenerateOccurrences();
+
+            // 2. Ejecutar la validación masiva en persistencia
+            bool isOccupied = await bookingRepository.HasAnyOverlappingOccurrencesAsync(
+                newBooking.CondoId,
+                newBooking.AssetId,
+                projectedOccurrences
+            );
+
+            if (isOccupied)
+            {
+                throw new InvalidOperationException("El recurso no está disponible en una o más fechas solicitadas para la serie.");
+            }
+
+            // 3. Guardar la reserva cabecera si pasa la validación
+            await bookingRepository.AddAsync(newBooking);
+            return true;
         }
     }
 }

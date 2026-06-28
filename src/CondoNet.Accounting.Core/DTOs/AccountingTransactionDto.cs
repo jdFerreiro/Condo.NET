@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace CondoNet.Accounting.Core.DTOs;
 
 public class AccountingTransactionDto

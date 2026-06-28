@@ -1,6 +1,3 @@
-using System;
-using System.Threading.Tasks;
-
 namespace CondoNet.Booking.Core.Services
 {
     public interface IBookingAvailabilityService

@@ -1,5 +1,3 @@
-using System;
-
 namespace CondoNet.Financial.Core.Entities
 {
     public class Resident : BaseEntity

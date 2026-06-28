@@ -1,9 +1,12 @@
 
+using CondoNet.Shared.Booking.Enums;
+
 namespace CondoNet.Booking.Core.Entities
 {
     public class Booking
     {
         public Guid Id { get; set; }
+        public Guid CondoId { get; set; } // <--- Filtro de Tenant
         public Guid AssetId { get; set; }
         public Guid UserId { get; set; }
         public BookingType Type { get; set; }
@@ -14,9 +17,9 @@ namespace CondoNet.Booking.Core.Entities
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 
-        // Recurrence support
+        // Recurrencia
         public RecurrenceType RecurrenceType { get; set; } = RecurrenceType.None;
-        public int? RecurrenceInterval { get; set; } // e.g., every 2 days/weeks/months
-        public DateTime? RecurrenceEnd { get; set; } // null = endless
+        public int? RecurrenceInterval { get; set; }
+        public DateTime? RecurrenceEnd { get; set; }
     }
 }

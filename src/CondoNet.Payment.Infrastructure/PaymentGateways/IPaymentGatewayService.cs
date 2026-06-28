@@ -1,6 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace CondoNet.Payment.Infrastructure.PaymentGateways;
 
 public interface IPaymentGatewayService

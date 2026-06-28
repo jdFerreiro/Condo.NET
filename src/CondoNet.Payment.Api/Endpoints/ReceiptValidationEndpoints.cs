@@ -1,6 +1,5 @@
 using CondoNet.Payment.Core.Models;
 using CondoNet.Payment.Core.Services;
-using Microsoft.AspNetCore.Http;
 
 namespace CondoNet.Payment.Api.Endpoints;
 

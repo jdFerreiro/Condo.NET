@@ -1,4 +1,4 @@
-namespace CondoNet.Booking.Core.Entities
+namespace CondoNet.Shared.Booking.Enums
 {
     public enum RecurrenceType
     {

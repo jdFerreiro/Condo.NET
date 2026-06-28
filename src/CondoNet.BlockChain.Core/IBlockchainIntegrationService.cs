@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using CondoNet.Shared.Financial.DTOs;
 using CondoNet.Shared.Payment.DTOs;
 

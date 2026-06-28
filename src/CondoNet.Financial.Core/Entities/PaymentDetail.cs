@@ -1,6 +1,3 @@
-using System;
-using CondoNet.Financial.Core.Entities;
-
 namespace CondoNet.Financial.Core.Entities;
 
 public class PaymentDetail : BaseEntity

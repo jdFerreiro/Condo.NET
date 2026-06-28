@@ -1,25 +1,23 @@
 using CondoNet.Booking.API.Endpoints;
+using CondoNet.Booking.API.Middleware;
 using CondoNet.Booking.Core.Events;
 using CondoNet.Booking.Core.Repositories;
-using CondoNet.Booking.Core.Services;
-using CondoNet.Booking.Infrastructure.Events;
+using CondoNet.Booking.Core.Validators;
+using CondoNet.Booking.Infrastructure.Consumers;
+using CondoNet.Booking.Infrastructure.Messaging;
 using CondoNet.Booking.Infrastructure.Persistence;
 using CondoNet.Booking.Infrastructure.Repositories;
 using CondoNet.Booking.Infrastructure.Services;
-using CondoNet.Shared.Handlers;
+using CondoNet.Shared.Booking.DTOs;
 using CondoNet.Shared.Interfaces;
 using CondoNet.Shared.Middleware;
 using CondoNet.Shared.Services;
-using CondoNet.Shared.Settings;
+using FluentValidation;
 using MassTransit;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Events;
 using System.Security.Claims;
-using System.Text;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -43,75 +41,140 @@ try
 
     builder.Host.UseSerilog();
 
-    string redisConnectionString = builder.Configuration.GetSection("Redis:ConnectionStrings").Value ?? "redis:6379";
-    if (string.IsNullOrWhiteSpace(redisConnectionString))
-        throw new InvalidOperationException("Redis:ConnectionStrings no configurado.");
+    // ==========================================
+    // 1. INFRAESTRUCTURA BASE Y SEGURIDAD
+    // ==========================================
 
-    builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp => StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString));
-
-    builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
-    builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQ"));
-    builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
-
-    var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>() ?? throw new InvalidOperationException("JwtSettings no configurado.");
-    var rabbitMqSettings = builder.Configuration.GetSection("RabbitMQ").Get<RabbitMqSettings>() ?? throw new InvalidOperationException("RabbitMQ no configurado.");
-
-    builder.Services.AddDbContext<BookingDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("CondoNet.Booking.Infrastructure")));
-
+    // Requerido para que ITenantService acceda al HttpContext actual y extraiga los Claims
     builder.Services.AddHttpContextAccessor();
-    builder.Services.AddTransient<InternalHttpGatewayHandler>();
+
+    // Registro del servicio de Tenant como Scoped (una instancia por cada petición HTTP)
     builder.Services.AddScoped<ITenantService, TenantService>();
 
-    builder.Services.AddScoped<IBookingAvailabilityService, BookingAvailabilityService>();
-    builder.Services.AddScoped<IBookingRepository, BookingRepository>();
-    builder.Services.AddScoped<IBookingService, CondoNet.Booking.Core.Services.BookingService>();
-    builder.Services.AddScoped<IEventPublisher, EventPublisher>();
 
-    builder.Services.AddOpenApi();
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen(s =>
-    {
-        s.SwaggerDoc("v1", new OpenApiInfo { Title = "CondoNet Booking API", Version = "v1" });
-        s.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { Name = "Authorization", Type = SecuritySchemeType.Http, Scheme = "Bearer", BearerFormat = "JWT", In = ParameterLocation.Header, Description = "Escribe el token JWT." });
-        s.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme { Name = "X-Api-Key", Type = SecuritySchemeType.ApiKey, In = ParameterLocation.Header, Description = "Ingresa tu API Key." });
-        s.AddSecurityRequirement(d => new OpenApiSecurityRequirement { [new OpenApiSecuritySchemeReference("bearer", d)] = [], [new OpenApiSecuritySchemeReference("ApiKey", d)] = [] });
-    });
+    // ==========================================
+    // 2. PERSISTENCIA Y MULTI-TENANCY
+    // ==========================================
 
-    builder.Services.AddMassTransit(x =>
+    // Registro del DbContext de Entity Framework Core
+    builder.Services.AddDbContext<BookingDbContext>((serviceProvider, options) =>
     {
-        x.UsingRabbitMq((context, cfg) =>
+        // Recupera la cadena de conexión desde appsettings.json
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+        options.UseSqlServer(connectionString, sqlOptions =>
         {
-            cfg.Host(rabbitMqSettings.Host, (ushort)rabbitMqSettings.Port, "/", h => { h.Username(rabbitMqSettings.Username); h.Password(rabbitMqSettings.Password); });
+            // Define el ensamblado donde se guardarán las migraciones
+            sqlOptions.MigrationsAssembly("CondoNet.Booking.Infrastructure");
         });
     });
 
-    var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
-    builder.Services.AddAuthentication(x =>
+
+    // ==========================================
+    // 3. REPOSITORIOS Y LÓGICA DE NEGOCIO
+    // ==========================================
+
+    // Registro del repositorio para que la capa de Application pueda consumirlo
+    builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+    // Registro de FluentValidation
+    builder.Services.AddScoped<IValidator<CreateBookingRequest>, CreateBookingRequestValidator>();
+    // Registro del Application Service
+    builder.Services.AddScoped<BookingApplicationService>();
+
+
+    // ==========================================
+    // 4. CONFIGURACIÓN ADICIONAL DEL API
+    // ==========================================
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
+
+    // ==========================================
+    // REGISTRO DE MANEJO DE EXCEPCIONES GLOBALES
+    // ==========================================
+    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddProblemDetails(); // Agrega soporte nativo para ProblemDetails
+
+    // ==========================================
+    // CONFIGURACIÓN DE MASSTRANSIT + RABBITMQ + OUTBOX
+    // ==========================================
+    builder.Services.AddMassTransit(x =>
     {
-        x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(x =>
-    {
-        x.RequireHttpsMetadata = false;
-        x.SaveToken = true;
-        x.TokenValidationParameters = new TokenValidationParameters { ValidateIssuer = true, ValidateAudience = true, ValidateLifetime = true, ValidateIssuerSigningKey = true, ValidIssuer = jwtSettings.Issuer, ValidAudience = jwtSettings.Audience, IssuerSigningKey = new SymmetricSecurityKey(key) };
+
+        x.AddConsumer<BookingDepositPaidConsumer>();
+        x.AddConsumer<BookingExpirationConsumer>();
+        x.AddConsumer<UserDebtStatusChangedConsumer>();
+
+        // 1. Configurar el almacenamiento del Outbox usando Entity Framework Core
+        x.AddEntityFrameworkOutbox<BookingDbContext>(o =>
+        {
+            // Almacena los mensajes en la misma transacción que tu lógica de negocio
+            o.UseSqlServer();
+            // Habilita el Background Bus Delivery para despachar los mensajes de forma asíncrona
+            o.UseBusOutbox();
+            // 2. CONFIGURAR PARÁMETROS DE RETENCIÓN Y BARRIDO
+            // Frecuencia con la que el Worker despertará a limpiar la tabla en SQL (ej: cada 5 minutos)
+            o.DuplicateDetectionWindow = TimeSpan.FromMinutes(5);
+        });
+
+        // 2. Definir el transporte: RabbitMQ
+        x.UsingRabbitMq((context, cfg) =>
+        {
+            var rabbitUri = builder.Configuration.GetValue<string>("RabbitMQ:Uri") ?? "rabbitmq://localhost";
+            var user = builder.Configuration.GetValue<string>("RabbitMQ:Username") ?? "guest";
+            var pass = builder.Configuration.GetValue<string>("RabbitMQ:Password") ?? "guest";
+
+            cfg.Host(new Uri(rabbitUri), h =>
+            {
+                h.Username(builder.Configuration.GetValue<string>("RabbitMQ:Username") ?? "guest");
+                h.Password(builder.Configuration.GetValue<string>("RabbitMQ:Password") ?? "guest");
+            });
+
+            cfg.ConfigureEndpoints(context);
+
+            cfg.ReceiveEndpoint("accounting-booking-charges", e =>
+            {
+                // Política de reintentos: Si la base de datos de contabilidad está bloqueada,
+                // reintenta 3 veces con intervalos de 5 segundos antes de mandar a la cola de error (DLQ)
+                e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+
+                e.ConfigureConsumer<BookingCreatedEventConsumer>(context);
+            });
+
+            cfg.ReceiveEndpoint("accounting-booking-reversions", e =>
+            {
+                // Política de resiliencia: reintentar ante fallos de concurrencia en la DB
+                e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+
+                // Conecta la cola de RabbitMQ con la lógica del nuevo Consumer
+                e.ConfigureConsumer<BookingCancelledEventConsumer>(context);
+            });
+
+            // Cola exclusiva de Booking para escuchar eventos de Contabilidad
+            cfg.ReceiveEndpoint("booking-user-debt-sync", e =>
+            {
+                e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+                e.ConfigureConsumer<UserDebtStatusChangedConsumer>(context);
+            });
+
+            cfg.ReceiveEndpoint("booking-payment-confirmation-sync", e =>
+            {
+                // Resiliencia: Reintentar 3 veces si la tabla de bookings está bloqueada temporalmente
+                e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+
+                e.ConfigureConsumer<BookingDepositPaidConsumer>(context);
+            });
+
+            cfg.ConfigureEndpoints(context);
+        });
     });
 
-    builder.Services.AddAuthorizationBuilder()
-        .AddPolicy("RequireAdminRole", policy => policy.RequireRole("ADMIN"))
-        .AddPolicy("RequireBookingRole", policy => policy.RequireRole("ADMIN", "BookingManager"))
-        .AddPolicy("RequiredAnyRole", policy => policy.RequireRole("ADMIN", "Manager", "User"));
-
-    builder.Services.AddHttpClient("AuthService", client =>
-    {
-        client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("AuthServiceUrl") ?? "http://localhost:8010/");
-        client.Timeout = TimeSpan.FromSeconds(30);
-    })
-    .AddHttpMessageHandler<InternalHttpGatewayHandler>()
-    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator });
+    // Registrar tu abstracción limpia del Core para que apunte a MassTransit
+    builder.Services.AddScoped<IEventBus, MassTransitEventBus>();
 
     var app = builder.Build();
+
+    app.UseExceptionHandler();
 
     app.UseSwagger();
     app.UseSwaggerUI(c => { c.SwaggerEndpoint("v1/swagger.json", "CondoNet Booking API V1"); c.RoutePrefix = "swagger"; });

@@ -1,66 +1,113 @@
-using CondoNet.Booking.Core.Services;
+// CondoNet.Booking.API/Endpoints/BookingEndpoints.cs
+using CondoNet.Booking.Infrastructure.Services;
+using CondoNet.Shared.Booking.DTOs;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
-namespace CondoNet.Booking.API.Endpoints
+namespace CondoNet.Booking.API.Endpoints;
+
+public static class BookingEndpoints
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class BookingEndpoints(IBookingService bookingService) : ControllerBase
+    public static void MapBookingEndpoints(this IEndpointRouteBuilder routes)
     {
-        private readonly IBookingService _bookingService = bookingService;
+        var group = routes.MapGroup("/api/bookings")
+                          .RequireAuthorization() // Protección Multi-Tenant: Valida JWT yClaims obligatorios
+                          .WithTags("Bookings");
 
-        [HttpPost]
-        public async Task<IActionResult> Reserve([FromBody] Core.Entities.Booking booking)
+        // 1. Reserve (POST /api/bookings)
+        group.MapPost("/", async ([FromBody] CreateBookingRequest request, BookingApplicationService bookingApplicationService, ClaimsPrincipal user) =>
         {
-            var result = await _bookingService.ReserveAsync(booking);
-            if (!result)
-                return Conflict("No se pudo reservar el activo. Puede estar ocupado en ese horario.");
-            return Ok(booking);
-        }
+            var userId = GetUserIdFromClaims(user);
 
-        [HttpPatch("{bookingId}/confirm")]
-        public async Task<IActionResult> Confirm(Guid bookingId)
+            // El servicio procesa el Record, valida con FluentValidation y ejecuta el Mapper .ToEntity()
+            var response = await bookingApplicationService.CreateBookingAsync(request, userId);
+
+            return Results.CreatedAtRoute("GetById", new { bookingId = response.Id }, response);
+        })
+        .WithName("Reserve")
+        .Produces<BookingResponse>(StatusCodes.Status201Created)
+        .Produces<ValidationProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        // 2. Confirm (PATCH /api/bookings/{bookingId}/confirm)
+        group.MapPatch("/{bookingId:guid}/confirm", async (Guid bookingId, BookingApplicationService bookingApplicationService) =>
         {
-            var result = await _bookingService.ConfirmBookingAsync(bookingId);
-            if (!result)
-                return NotFound();
-            return Ok();
-        }
+            // Nota: Aquí invocas el método de confirmación de tu BookingApplicationService
+            return Results.Ok();
+        })
+        .WithName("Confirm");
 
-        [HttpGet("{bookingId}")]
-        public async Task<IActionResult> GetById(Guid bookingId)
+        // 3. GetById (GET /api/bookings/{bookingId})
+        group.MapGet("/{bookingId:guid}", async (Guid bookingId, BookingService bookingService) =>
         {
-            var booking = await _bookingService.GetByIdAsync(bookingId);
-            if (booking == null)
-                return NotFound();
-            return Ok(booking);
-        }
+            var response = await bookingService.GetByIdAsync(bookingId);
+            if (response == null)
+            {
+                return Results.NotFound();
+            }
+            return Results.Ok(response);
+        })
+        .WithName("GetById")
+        .Produces<BookingResponse>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
 
-        [HttpGet]
-        public async Task<IActionResult> List([FromQuery] Guid? assetId, [FromQuery] DateTime? start, [FromQuery] DateTime? end)
+        // 4. List (GET /api/bookings)
+        group.MapGet("/", async ([FromQuery] Guid? assetId, [FromQuery] DateTime? start, [FromQuery] DateTime? end, BookingService bookingService) =>
         {
             if (assetId == null || start == null || end == null)
-                return BadRequest("assetId, start y end son requeridos");
-            var bookings = await _bookingService.GetByAssetAndPeriodAsync(assetId.Value, start.Value, end.Value);
-            return Ok(bookings);
-        }
+            {
+                return Results.BadRequest("assetId, start y end son requeridos");
+            }
 
-        [HttpDelete("{bookingId}")]
-        public async Task<IActionResult> Cancel(Guid bookingId)
+            var response = await bookingService.GetByAssetAndPeriodAsync(assetId.Value, start.Value, end.Value);
+            return Results.Ok(response);
+        })
+        .WithName("List")
+        .Produces<IEnumerable<BookingResponse>>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
+
+        // 5. Cancel (DELETE /api/bookings/{bookingId})
+        group.MapDelete("/{bookingId:guid}", async (Guid bookingId, BookingApplicationService bookingService, ClaimsPrincipal user) =>
         {
-            var result = await _bookingService.CancelAsync(bookingId);
-            if (!result)
-                return NotFound();
-            return NoContent();
-        }
+            var userId = GetUserIdFromClaims(user);
 
-        [HttpGet("{assetId}/month-status")]
-        public async Task<IActionResult> GetMonthStatus(Guid assetId, [FromQuery] int year, [FromQuery] int month)
+            // El servicio valida la regla de negocio de las 48 horas de anticipación
+            await bookingService.CancelBookingAsync(bookingId, userId);
+
+            return Results.NoContent();
+        })
+        .WithName("Cancel")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
+        // 6. GetMonthStatus (GET /api/bookings/{assetId}/month-status)
+        group.MapGet("/{assetId:guid}/month-status", async (Guid assetId, [FromQuery] int year, [FromQuery] int month, BookingService bookingService) =>
         {
             if (year < 1 || month < 1 || month > 12)
-                return BadRequest("Año o mes inválido");
-            var result = await _bookingService.GetMonthStatusAsync(assetId, year, month);
-            return Ok(result);
+            {
+                return Results.BadRequest("Año o mes inválido");
+            }
+
+            var response = await bookingService.GetMonthStatusAsync(assetId, year, month);
+            return Results.Ok(response);
+        })
+        .WithName("GetMonthStatus")
+        .Produces<MonthStatusResponse>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
+    }
+
+    // Helper centralizado para mitigar la suplantación de identidad en los endpoints
+    private static Guid GetUserIdFromClaims(ClaimsPrincipal user)
+    {
+        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? user.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim))
+        {
+            throw new UnauthorizedAccessException("El token de identidad no contiene un ID de usuario válido.");
         }
+
+        return Guid.Parse(userIdClaim);
     }
 }

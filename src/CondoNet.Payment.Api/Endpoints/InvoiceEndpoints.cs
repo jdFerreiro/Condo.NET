@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Http;
-
 namespace CondoNet.Payment.Api.Endpoints;
 
 public static class InvoiceEndpoints
