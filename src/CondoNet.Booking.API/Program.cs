@@ -21,10 +21,14 @@ using System.Security.Claims;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
-    .Enrich.FromLogContext()
-    .WriteTo.Console(new Serilog.Formatting.Compact.CompactJsonFormatter())
-    .CreateBootstrapLogger();
-
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning) // Evita ruido de .NET
+    .Enrich.FromLogContext() // Captura propiedades del contexto de la petición
+    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}") // Consola para desarrollo
+    .WriteTo.File(
+        path: "Logs/booking-audit-.txt",
+        rollingInterval: RollingInterval.Day,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}") // Archivo estructurado JSON/Propiedades
+    .CreateLogger();
 try
 {
     Log.Information("Iniciando el microservicio Booking Service de CondoNET...");
